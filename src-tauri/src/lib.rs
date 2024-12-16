@@ -10,8 +10,9 @@ pub fn run() {
         description: "create users table",
         sql: "CREATE TABLE IF NOT EXISTS users (  
                 id INTEGER PRIMARY KEY AUTOINCREMENT,  
-                name TEXT NOT NULL,  
-                email TEXT  
+                username TEXT NOT NULL,  
+                password TEXT,
+                status TEXT  
             )",
         kind: MigrationKind::Up,
     }];

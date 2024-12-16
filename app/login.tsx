@@ -1,9 +1,16 @@
-import { Form, Input, Button } from "antd";
+import { Form, Input, Button, message } from "antd";
+import Database from "@tauri-apps/plugin-sql";
 
 export default function Login() {
-  const handleSubmit = (values: any) => {
-    console.log("Received values:", values);
+  const handleSubmit = async (values: any) => {
     // 这里可以添加调用登录接口的逻辑
+    const db = await Database.load("sqlite:test.db");
+
+    await db.execute(
+      "INSERT INTO users (username, password, status) VALUES ($1, $2, $3)",
+      [values.username, values.password, "isTokerSuccess"]
+    );
+    message.success("登陆成功");
   };
 
   return (

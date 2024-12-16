@@ -7,12 +7,13 @@ import {
 import type { Route } from "./+types/root";
 
 import Login from "./login";
-import DbApp from "./dbApp";
 import { useEffect, useState, type ReactNode } from "react";
+import Database from "@tauri-apps/plugin-sql";
+import LayoutConents from "./Layout";
 
 const TOKEN_STATUS = ["isToken", "isTokerSuccess", "isToktonErr"] as const;
 
-type TOKEN_STATUS_KEYS = (typeof TOKEN_STATUS)[number];
+export type TOKEN_STATUS_KEYS = (typeof TOKEN_STATUS)[number];
 
 // existing imports & exports
 
@@ -28,18 +29,41 @@ export function HydrateFallback() {
 const TokenStatusCom: {
   [key in TOKEN_STATUS_KEYS]: ReactNode;
 } = {
-  isToktonErr: <DbApp />,
-  isTokerSuccess: <Outlet />,
+  isToktonErr: <Login />,
+  isTokerSuccess: (
+    <LayoutConents>
+      <Outlet />
+    </LayoutConents>
+  ),
+
   isToken: <HydrateFallback />,
+};
+
+export type User = {
+  id: number;
+  username: string;
+  password: string;
+  status: TOKEN_STATUS_KEYS;
 };
 
 export default function App() {
   const [isToken, setisToken] = useState<TOKEN_STATUS_KEYS>("isToken");
-
+  async function getUsers() {
+    try {
+      const db = await Database.load("sqlite:test.db");
+      const dbUsers = await db.select<User[]>("SELECT * FROM users");
+      console.log(dbUsers);
+      if (dbUsers.some((e) => e.status === "isTokerSuccess")) {
+        setisToken("isTokerSuccess");
+      } else {
+        setisToken("isToktonErr");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
   useEffect(() => {
-    setTimeout(() => {
-      setisToken("isToktonErr");
-    }, 1000);
+    getUsers();
   }, []);
 
   return (
