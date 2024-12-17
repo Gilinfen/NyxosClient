@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    privatetauriapptemplate_lib::run();
+    nyxosclient_lib::run();
 }

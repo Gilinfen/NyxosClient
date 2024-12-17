@@ -2,7 +2,12 @@ export default function Header() {
   return (
     <div>
       <nav>
-        <ul>
+        <ul
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between'
+          }}
+        >
           <li>
             <a href="/">首页</a>
           </li>
@@ -12,8 +17,11 @@ export default function Header() {
           <li>
             <a href="/dbapp">数据库应用</a>
           </li>
+          <li>
+            <a href="/douyin">抖音</a>
+          </li>
         </ul>
       </nav>
     </div>
-  );
+  )
 }
