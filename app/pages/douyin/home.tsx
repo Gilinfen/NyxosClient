@@ -8,7 +8,7 @@ export default function DouyinPage() {
   const [wsobj, setwsobj] = useState<WebSocketParoams>()
 
   useEffect(() => {
-    obj.getWebsocketUrl('https://live.douyin.com/786025753973').then(res => {
+    obj.getWebsocketUrl('https://live.douyin.com/27591437062').then(res => {
       if (!res) return
       setwsobj(res)
       console.log(res)
@@ -21,6 +21,7 @@ export default function DouyinPage() {
         onClick={async () => {
           invoke('connect_to_websocket', {
             url: wsobj?.wsurl,
+            liveRoomId: '27591437062',
             headers: {
               'User-Agent':
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',

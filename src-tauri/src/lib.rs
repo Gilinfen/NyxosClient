@@ -1,6 +1,8 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+mod proto;
+
 mod douyin;
 mod https;
 
@@ -27,7 +29,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             https::make_https_request,
-            douyin::websocket::connect_to_websocket
+            douyin::live::websocket::connect_to_websocket
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
