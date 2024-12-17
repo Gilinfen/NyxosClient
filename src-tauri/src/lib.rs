@@ -1,10 +1,10 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use tauri_plugin_sql::{Migration, MigrationKind};
 
-mod proto;
-
 mod douyin;
 mod https;
+mod proto;
+mod websocket_manager; // 引入模块
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
