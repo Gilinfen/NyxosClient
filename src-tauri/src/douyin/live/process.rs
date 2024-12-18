@@ -3,7 +3,7 @@ use tauri::AppHandle;
 use crate::{douyin::live::message, proto::douyin_protos};
 
 // 每一条直播间消息解析
-pub fn process_messages(
+pub async fn process_messages(
     app: &AppHandle,
     messages: &Vec<douyin_protos::Message>,
     live_room_id: &str,

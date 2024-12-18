@@ -6,7 +6,7 @@ use crate::proto::douyin_protos;
 // 聊天消息
 pub fn un_pack_webcast_chat_message(app: &AppHandle, payload: &[u8]) {
     let chat = douyin_protos::ChatMessage::decode(payload);
-    println!("chat :{:?}", chat);
+    // println!("chat :{:?}", chat);
     // 处理逻辑...
 }
 

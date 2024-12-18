@@ -9,13 +9,16 @@ import webmssdk from './assets/douyin/webmssdk?url'
 import Login from './login'
 import { useEffect, useState, type ReactNode } from 'react'
 import Database from '@tauri-apps/plugin-sql'
+import zhCN from 'antd/locale/zh_CN'
 import LayoutConents from './Layout'
+
+import globalscss from './globals.scss?url'
+import { ConfigProvider } from 'antd'
+import theme from './theme/adtd'
 
 const TOKEN_STATUS = ['isToken', 'isTokerSuccess', 'isToktonErr'] as const
 
 export type TOKEN_STATUS_KEYS = (typeof TOKEN_STATUS)[number]
-
-// existing imports & exports
 
 export function HydrateFallback() {
   return (
@@ -82,12 +85,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href={globalscss} />
         <script src={webmssdk} async></script>
       </head>
       <body>
-        {children}
-        <ScrollRestoration />
-        <Scripts />
+        <ConfigProvider theme={theme} locale={zhCN}>
+          {children}
+          <ScrollRestoration />
+          <Scripts />
+        </ConfigProvider>
       </body>
     </html>
   )
