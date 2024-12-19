@@ -7,7 +7,7 @@ pub async fn make_https_request(
     method: &str,
     headers: Option<HashMap<String, String>>,
     body: Option<String>,
-) -> Result<(String, HashMap<String, String>), String> {
+) -> Result<(String, Vec<String>, HashMap<String, String>), String> {
     // 修改返回类型为包含响应头的元组
     let client = Client::new();
     let request_builder = match method.to_lowercase().as_str() {
@@ -43,13 +43,20 @@ pub async fn make_https_request(
 
     match request_builder.send().await {
         Ok(response) => {
+            // 收集所有 Set-Cookie 的值
+            let set_cookie_headers: Vec<_> = response
+                .headers()
+                .get_all("Set-Cookie")
+                .iter()
+                .map(|val| val.to_str().unwrap_or("").to_string())
+                .collect();
             let headers = response
                 .headers()
                 .iter()
                 .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
                 .collect::<HashMap<_, _>>(); // 获取响应头
             match response.text().await {
-                Ok(text) => Ok((text, headers)), // 返回响应文本和响应头
+                Ok(text) => Ok((text, set_cookie_headers, headers)), // 返回响应文本和响应头
                 Err(err) => Err(format!("Failed to read response text: {}", err)),
             }
         }

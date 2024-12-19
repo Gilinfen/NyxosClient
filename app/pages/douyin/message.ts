@@ -1,4 +1,5 @@
 import type { MessageType } from '~/db/douyin/message'
+
 export class Message implements MessageType {
   WebcastChatMessage = { label: '聊天消息', dev_status: true } as const
   WebcastMatchAgainstScoreMessage = {

@@ -22,8 +22,8 @@ pub fn create_douyin_tables() -> Vec<Migration> {
         },
         Migration {
             version: 2,
-            description: "create danmu table",
-            sql: "CREATE TABLE IF NOT EXISTS danmu (
+            description: "create tasks_danmu table",
+            sql: "CREATE TABLE IF NOT EXISTS tasks_danmu (
                     user_id TEXT NOT NULL,
                     message_id TEXT NOT NULL,
                     user_name TEXT NOT NULL,
@@ -37,8 +37,8 @@ pub fn create_douyin_tables() -> Vec<Migration> {
         },
         Migration {
             version: 3,
-            description: "create users table",
-            sql: "CREATE TABLE IF NOT EXISTS users (
+            description: "create tasks_users table",
+            sql: "CREATE TABLE IF NOT EXISTS tasks_users (
                     user_id TEXT NOT NULL,
                     user_name TEXT NOT NULL,
                     user_url TEXT NOT NULL,

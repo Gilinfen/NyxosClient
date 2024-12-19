@@ -28,7 +28,8 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
   exportExcel: _exportExcel,
   importExcel: _importExcel,
   updateWebSocketTaskItem: _updateWebSocketTaskItem,
-  clearAllWebSocketTask
+  clearAllWebSocketTask,
+  LoginComProms
 }) => {
   const [isList, setIsList] = useState(false)
   const [messageApi, contextHolder] = message.useMessage()
@@ -186,6 +187,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
                 app_type={app_type}
                 updateWebSocketTask={updateWebSocketTask}
                 updateWebSocketTaskItem={updateWebSocketTaskItem}
+                LoginComProms={LoginComProms}
               />
             ))}
           </Flex>

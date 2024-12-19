@@ -66,6 +66,28 @@ export interface BaseWebsocketAdminProps {
    */
   AddFormItems?: UpdateLiveProps['FormItems']
   /**
+   * 登陆组件参数
+   */
+  LoginComProms: {
+    /**
+     * 二维码连接
+     */
+    loginUrl?: string
+    /**
+     * 登陆状态
+     * - loggedIn: 用户已成功登录
+     * - loggedOut: 用户未登录
+     * - scanned: 二维码已成功扫描
+     * - qrExpired: 二维码已过期
+     */
+    loginStatus: 'loggedIn' | 'loggedOut' | 'scanned' | 'qrExpired'
+    /**
+     * 刷新函数
+     * @returns
+     */
+    onExpired?: (url?: string) => Promise<void>
+  }
+  /**
    * message 自定义内容
    */
   MessageConent?: ({ data }: { data: TaskListType }) => ReactNode

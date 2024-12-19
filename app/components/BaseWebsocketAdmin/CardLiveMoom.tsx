@@ -146,7 +146,7 @@ export const getActions = ({
   updateWebSocketTaskItem
 }: Omit<
   CardLiveMoomProps,
-  'MessageIconsArrCom' | 'messages_info'
+  'MessageIconsArrCom' | 'messages_info' | 'LoginComProms'
 >): React.ReactNode[] => {
   return [
     <UpdateLive
@@ -296,16 +296,17 @@ export const LiveLoading = ({
 
 export interface CardLiveMoomProps {
   data: TaskListType
+  app_type: BaseWebsocketAdminProps['app_type']
+  LoginComProms: BaseWebsocketAdminProps['LoginComProms']
   /**
    * message 自定义内容
    */
   MessageConent: BaseWebsocketAdminProps['MessageConent']
   MessageIconsArrCom: BaseWebsocketAdminProps['MessageIconsArrCom']
-  AddFormItems: BaseWebsocketAdminProps['AddFormItems']
+  AddFormItems?: BaseWebsocketAdminProps['AddFormItems']
   online_count: BaseWebsocketAdminProps['online_count']
   barrage_ount: BaseWebsocketAdminProps['barrage_ount']
   messages_info: BaseWebsocketAdminProps['messages_info']
-  app_type: BaseWebsocketAdminProps['app_type']
   updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
 }
@@ -429,25 +430,34 @@ export const DanmuCount = ({
   )
 }
 
-export const CardLiveMoomLoading = () => {
+export const CardLiveMoomLoading = ({ children }: { children?: ReactNode }) => {
   return (
     <>
       <motion.div
-        className="absolute flex items-center justify-center top-0 left-0 right-0 bottom-0 backdrop-blur-sm bg-[rgba(0,0,0,0.3)] z-[12] rounded-lg"
+        className="absolute flex items-center justify-center top-0 left-0 right-0 bottom-0 backdrop-blur-sm bg-[rgba(0,0,0,0.3)] z-[12] rounded-lg border border-black"
         animate={{ opacity: [0, 1] }}
         transition={{ duration: 0.5 }}
       >
-        <Flex
-          justify="center"
-          align="center"
-          wrap="wrap"
-          className="w-full text-[#fff] text-[1.2rem]"
-        >
-          <LoadingOutlined className="text-[#fff] text-[2rem]" />
-          <Flex gap="small" align="center" justify="center" className="w-full">
-            加载中...
+        {children ? (
+          children
+        ) : (
+          <Flex
+            justify="center"
+            align="center"
+            wrap="wrap"
+            className="w-full text-[#fff] text-[1.2rem]"
+          >
+            <LoadingOutlined className="text-[#fff] text-[2rem]" />
+            <Flex
+              gap="small"
+              align="center"
+              justify="center"
+              className="w-full"
+            >
+              加载中...
+            </Flex>
           </Flex>
-        </Flex>
+        )}
       </motion.div>
     </>
   )
@@ -477,9 +487,11 @@ const MemberEnter = ({
 
 export const CardLiveMoomChat = ({
   data,
+  onClick,
   isLogin
 }: {
   data: TaskListType
+  onClick?: () => void
   isLogin?: boolean
 }) => {
   return (
@@ -491,10 +503,44 @@ export const CardLiveMoomChat = ({
           variant="filled"
         />
       ) : (
-        <Button type="primary" block icon={<CommentOutlined />}>
-          登陆开始聊天
+        <Button onClick={onClick} type="primary" block icon={<ScanOutlined />}>
+          扫码登陆开始聊天
         </Button>
       )}
+    </Flex>
+  )
+}
+
+const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
+  return (
+    <Flex
+      className="bg-white border border-gray-950 rounded-lg relative"
+      justify="center"
+      align="center"
+      wrap="wrap"
+    >
+      {props?.loginStatus === 'qrExpired' && (
+        <Flex
+          justify="center"
+          align="center"
+          wrap="wrap"
+          onClick={() => {
+            props.onExpired?.(props?.loginUrl)
+          }}
+          className="absolute z-[2] opacity-[80%] cursor-pointer content-center  rounded-lg left-0 right-0 top-0 bottom-0 bg-[#ffffff]  "
+        >
+          <Flex justify="center" align="center" className="w-full">
+            <ReloadOutlined />
+          </Flex>
+          <Flex justify="center" align="center" className="w-full">
+            二维码失效
+          </Flex>
+          <Flex justify="center" align="center" className="w-full">
+            点击刷新
+          </Flex>
+        </Flex>
+      )}
+      <QRCode value={props?.loginUrl ?? '-'} />
     </Flex>
   )
 }
@@ -531,11 +577,31 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
   MessageConent,
   app_type,
   updateWebSocketTask,
-  updateWebSocketTaskItem
+  updateWebSocketTaskItem,
+  LoginComProms
 }) => {
+  const [loading, setloading] = useState(false)
+
+  const onCardLiveMoomChatClick = async () => {
+    setloading(true)
+    await LoginComProms?.onExpired?.(LoginComProms?.loginUrl)
+  }
+
   return (
     <Flex justify="center" align="center" className="relative">
-      {data.task_status === 'reconnecting' && <CardLiveMoomLoading />}
+      {(data.task_status === 'reconnecting' || loading) && (
+        <CardLiveMoomLoading>
+          {loading ? (
+            <LoginCom
+              loginStatus={LoginComProms.loginStatus}
+              loginUrl={LoginComProms?.loginUrl}
+              onExpired={LoginComProms?.onExpired}
+            />
+          ) : (
+            ''
+          )}
+        </CardLiveMoomLoading>
+      )}
       <Card
         bordered
         title={
@@ -602,7 +668,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
           className="w-full text-[1.2rem] z-[10] relative pt-[1rem]"
           wrap="wrap"
         >
-          <CardLiveMoomChat data={data} />
+          <CardLiveMoomChat onClick={onCardLiveMoomChatClick} data={data} />
           <Flex justify="space-between" align="center" className="w-full">
             <Duration data={data} />
             <Flex gap="small" align="center" justify="center">
