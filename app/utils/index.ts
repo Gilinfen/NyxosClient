@@ -40,3 +40,44 @@ export const loadScript = (
     document.body.appendChild(script)
   })
 }
+/**
+ * 轮询方法
+ * @param task 要执行的异步任务
+ * @param interval 轮询间隔时间（毫秒）
+ * @param maxDuration 最大请求时间（毫秒）
+ * @returns 返回一个 Promise，表示轮询的结果
+ */
+export const poll = async (
+  task: () => Promise<boolean>,
+  interval: number,
+  maxDuration: number = 300000
+): Promise<void> => {
+  const startTime = Date.now()
+  const intervalId = setInterval(async () => {
+    if (Date.now() - startTime >= maxDuration) {
+      clearInterval(intervalId)
+    }
+    try {
+      const stop = await task()
+      if (stop) {
+        clearInterval(intervalId)
+      }
+    } catch (error) {
+      clearInterval(intervalId)
+      // 继续轮询，直到达到最大请求时间
+    }
+  }, interval)
+}
+
+/**
+ * 将字符串转换为JSON对象
+ * @param str 要转换的字符串
+ * @returns 返回JSON对象或原字符串
+ */
+export const stringToJson = (str: string): any => {
+  try {
+    return JSON.parse(str)
+  } catch {
+    return str
+  }
+}

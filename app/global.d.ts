@@ -4,6 +4,7 @@ declare global {
   interface Window {
     DOUYIN_API: {
       get__ac_signature: (__ac_nonce: string) => string
+      generate_a_bogus: (params: string, ua: string) => string
     }
     // 抖音官方签名
     byted_acrawler: {

@@ -3,6 +3,7 @@ import { makeRequest } from '~/utils/request'
 import { DouyinCookieApi } from './cookie'
 import { loadScript } from '~/utils'
 import webmssdk from '~/assets/douyin/webmssdk?url'
+import A_Bogus_16X from '~/assets/douyin/A_Bogus_16X?url'
 
 interface WsParams {
   baseUrl: string
@@ -58,10 +59,9 @@ export class DouyinWebSocketCommands {
       const __ac_signature = await DouyinCookieApi.get__ac_signature(__ac_nonce)
 
       // 发送HTTP请求获取直播间页面内容
-      const response = await makeRequest<string>(
+      const response = await makeRequest<string>({
         url,
-        'GET',
-        {
+        headers: {
           accept:
             'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
           'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
@@ -80,9 +80,8 @@ export class DouyinWebSocketCommands {
           'upgrade-insecure-requests': '1',
           'user-agent':
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-        },
-        null
-      )
+        }
+      })
 
       const html = response[0]
 
@@ -103,6 +102,19 @@ export type WebSocketParoams = {
 }
 
 export default class DouyinBaseInject {
+  public static async getABougus16X(
+    params: string,
+    ua: string
+  ): Promise<string> {
+    let A_Bogus_16X_val = ''
+    const remjs = await loadScript(A_Bogus_16X, async () => {
+      A_Bogus_16X_val = window.DOUYIN_API.generate_a_bogus(params, ua)
+    })
+    remjs()
+
+    return A_Bogus_16X_val
+  }
+
   public static async getWebsocketUrl(
     liveUrl: string
   ): Promise<WebSocketParoams | undefined> {

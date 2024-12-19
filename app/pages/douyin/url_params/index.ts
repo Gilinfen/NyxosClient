@@ -117,10 +117,25 @@ export interface DouyinAPIEndpointsInterface {
       /** 登录检查 */
       SSO_LOGIN_CHECK_QR: {
         params: SSO_DOMAIN_PARAMS.SSO_LOGIN_CHECK_QR
-        response: any
+        response: {
+          data: {
+            /**
+             * 1 查询确认
+             * 2 扫码成功
+             * 5 已过期
+             */
+            status: '1' | '2' | '5'
+          }
+          description: string
+          error_code: number
+          message: 'success'
+        }
       }
       /** 登录确认 */
-      SSO_LOGIN_CHECK_LOGIN: { params: { userId: string }; response: any }
+      SSO_LOGIN_CHECK_LOGIN: {
+        params: SSO_DOMAIN_PARAMS.SSO_LOGIN_CHECK_QR
+        response: any
+      }
       /** 登录重定向 */
       SSO_LOGIN_REDIRECT: { params?: any; response: any }
       /** 登录回调 */

@@ -23,7 +23,7 @@ import {
   Tooltip
 } from 'antd'
 import { motion } from 'framer-motion'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import cn from 'classnames'
 import UpdateLive from './UpdateLive'
 import type { BaseWebsocketAdminProps, TaskListType } from './types'
@@ -512,6 +512,57 @@ export const CardLiveMoomChat = ({
 }
 
 const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
+  const LoginStatusCom = () => {
+    const [loading, setLoading] = useState<boolean>()
+    const isLoading = useMemo(() => loading, [loading, props])
+    switch (props.loginStatus) {
+      case 'qrExpired':
+        return (
+          <Flex
+            justify="center"
+            align="center"
+            wrap="wrap"
+            onClick={async () => {
+              if (isLoading) return
+              setLoading(true)
+              await props.onExpired?.(props?.loginUrl)
+              setLoading(false)
+            }}
+            className="absolute z-[2] opacity-[80%] cursor-pointer content-center  rounded-lg left-0 right-0 top-0 bottom-0 bg-[#ffffff]  "
+          >
+            <Flex justify="center" align="center" className="w-full">
+              {isLoading ? <LoadingOutlined /> : <ReloadOutlined />}
+            </Flex>
+            <Flex justify="center" align="center" className="w-full">
+              二维码失效
+            </Flex>
+            <Flex justify="center" align="center" className="w-full">
+              点击刷新
+            </Flex>
+          </Flex>
+        )
+      case 'scanned':
+        return (
+          <Flex
+            justify="center"
+            align="center"
+            wrap="wrap"
+            className="absolute z-[2] opacity-[80%] cursor-pointer content-center  rounded-lg left-0 right-0 top-0 bottom-0 bg-[#ffffff]  "
+          >
+            <Flex justify="center" align="center" className="w-full">
+              <ReloadOutlined />
+            </Flex>
+            <Flex justify="center" align="center" className="w-full">
+              扫码成功
+            </Flex>
+          </Flex>
+        )
+
+      default:
+        return null
+    }
+  }
+
   return (
     <Flex
       className="bg-white border border-gray-950 rounded-lg relative"
@@ -519,28 +570,8 @@ const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
       align="center"
       wrap="wrap"
     >
-      {props?.loginStatus === 'qrExpired' && (
-        <Flex
-          justify="center"
-          align="center"
-          wrap="wrap"
-          onClick={() => {
-            props.onExpired?.(props?.loginUrl)
-          }}
-          className="absolute z-[2] opacity-[80%] cursor-pointer content-center  rounded-lg left-0 right-0 top-0 bottom-0 bg-[#ffffff]  "
-        >
-          <Flex justify="center" align="center" className="w-full">
-            <ReloadOutlined />
-          </Flex>
-          <Flex justify="center" align="center" className="w-full">
-            二维码失效
-          </Flex>
-          <Flex justify="center" align="center" className="w-full">
-            点击刷新
-          </Flex>
-        </Flex>
-      )}
-      <QRCode value={props?.loginUrl ?? '-'} />
+      <LoginStatusCom />
+      {props?.loginUrl ? <QRCode value={props.loginUrl} /> : <></>}
     </Flex>
   )
 }
@@ -592,11 +623,15 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
       {(data.task_status === 'reconnecting' || loading) && (
         <CardLiveMoomLoading>
           {loading ? (
-            <LoginCom
-              loginStatus={LoginComProms.loginStatus}
-              loginUrl={LoginComProms?.loginUrl}
-              onExpired={LoginComProms?.onExpired}
-            />
+            LoginComProms.loginUrl ? (
+              <LoginCom
+                loginStatus={LoginComProms.loginStatus}
+                loginUrl={LoginComProms.loginUrl}
+                onExpired={LoginComProms.onExpired}
+              />
+            ) : (
+              ''
+            )
           ) : (
             ''
           )}

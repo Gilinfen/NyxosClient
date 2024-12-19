@@ -23,12 +23,12 @@ import { deleteData, getDbData, insertData, updateData } from '~/db/utils'
 // 导入 UUID 生成器
 import { v4 as uuidV4 } from 'uuid'
 // 导入延迟工具函数
-import { delay } from '~/utils'
+import { delay, poll } from '~/utils'
 // 导入消息类
 import { Message } from './message'
 import { DouyinAPIEndpoints } from './urls'
 import type { DouyinAPIEndpointsInterface } from './url_params/index'
-import { objectToParams } from '~/utils/request'
+import { makeRequest, objectToParams } from '~/utils/request'
 import { DouyinCookieApi } from './api/cookie'
 import DouyinBaseInject from './api/base'
 
@@ -77,11 +77,11 @@ export default function DouyinPage() {
     }
     setmessageTypeState(messageArray) //
 
-    DouyinBaseInject.getWebsocketUrl(
-      'https://live.douyin.com/156392868120'
-    ).then(res => {
-      console.log(res)
-    })
+    // DouyinBaseInject.getWebsocketUrl(
+    //   'https://live.douyin.com/156392868120'
+    // ).then(res => {
+    //   console.log(res)
+    // })
   }, [])
 
   // 从数据库获取任务
@@ -320,27 +320,76 @@ export default function DouyinPage() {
             request_host: 'https://www.douyin.com',
             biz_trace_id: '5d6d30bd',
             device_platform: 'web_app',
-            msToken: '',
-            a_bogus:
-              'xysVD7UjQx/fcd/GYciTe3lUT8fMrBSyhPixRiFP7OFrYHzaguNdkePGbFoARG6L0SBkkqI7xx46YnVPMTWp2FnpwmpfSpkRPzVnny0L8qhvPaJhJrDiSbtxuk4blAGYYQAVEZ7RIsBi2d569H90AppSz/4N-5EDsr-7V/YGY2bRBW8c2iFoYKiXekvOQT9XsJ8='
+            msToken:
+              'KT6fLqz9WW6oHu9NBnTntpY6XUpQ3flQLpk3fb_lCOgNg9s4wSDJQJM30BHU2pKOwJTCx6GFnaAPGZJCfP5MB4gAfTQKIjIVjb4I6WIDP5fPycmcMG3R-fEkoOHYhd2pzMl0r8a0LBz8duYWbIZoeyPd3s6HMxOd1dLNyPYNxQ-I1p0N5uQAUeY=',
+            a_bogus: ''
           }
+        // @ts-ignore
+        delete params_obj.a_bogus
+        const ua =
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+
+        params_obj.a_bogus = await DouyinBaseInject.getABougus16X(
+          objectToParams(params_obj),
+          ua
+        )
 
         const params = objectToParams(params_obj)
-        const qutl = qtburl + params
+        const qutl = `${qtburl}?${params}`
+        const res = await makeRequest<any>({
+          url: qutl,
+          headers: {
+            cookie: `ttwid=${ttwid}`
+          }
+        })
 
-        // console.log(qutl)
+        const quurl = res?.[0]?.data.qrcode_index_url
+        const token = res?.[0]?.data.token
 
         // 请求获取url
-        // setLoginUrl(
-        //   'https://api.amemv.com/ucenter_web/app/aweme/scan_login/?hide_nav_bar=1&next_url=https%3A%2F%2Fapi.amemv.com%2Fpassport%2Fsso%2Fscan_qrcode%2F&qr_source_aid=2906&token=1043a268c9d9890c81ffe225322c250b_lq'
-        // )
+        setLoginUrl(quurl)
+        setloginStatus('loggedOut')
 
-        setloginStatus('scanned')
+        const check_qrconnect_url_ =
+          DouyinAPIEndpoints.SSO_DOMAIN.BASE_URL +
+          DouyinAPIEndpoints.SSO_DOMAIN.ROUTERS.SSO_LOGIN_CHECK_QR
 
-        // 开启轮询url状态
-        setTimeout(() => {
-          setloginStatus('qrExpired')
-        }, 2000)
+        const check_qrconnect_params: DouyinAPIEndpointsInterface['SSO_DOMAIN']['ROUTERS']['SSO_LOGIN_CHECK_QR']['params'] =
+          {
+            ...params_obj,
+            token,
+            is_frontier: false
+          }
+        const check_qrconnect_url = `${check_qrconnect_url_}?${objectToParams(
+          check_qrconnect_params
+        )}`
+        poll(async () => {
+          const res = await makeRequest<
+            DouyinAPIEndpointsInterface['SSO_DOMAIN']['ROUTERS']['SSO_LOGIN_CHECK_QR']['response']
+          >({
+            url: check_qrconnect_url,
+            headers: {
+              cookie: `ttwid=${ttwid}`
+            }
+          })
+          const log_status = res[0].data.status
+          switch (log_status) {
+            case '1':
+              setloginStatus('loggedOut')
+              return false
+
+            case '2':
+              setloginStatus('scanned')
+              return true
+
+            case '5':
+              setloginStatus('qrExpired')
+              return true
+
+            default:
+              return false
+          }
+        }, 1000)
       } catch (error) {
         console.error('刷新二维码失败:', error) // 处理错误
       }
