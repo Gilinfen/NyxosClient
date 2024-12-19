@@ -55,7 +55,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     {
       title: '直播间',
       ellipsis: true,
-      dataIndex: 'appType',
+      dataIndex: 'app_type',
       render: () => {
         return <>{/* <CardTitle data={data} /> */}</>
       }
@@ -64,7 +64,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
       title: '用户',
       dataIndex: 'username',
       render: (text, record) => {
-        const url = `https://www.douyin.com/user/${record.userId}?from_tab_name=live`
+        const url = `https://www.douyin.com/user/${record.user_id}?from_tab_name=live`
         return (
           <Flex
             gap="small"
@@ -120,7 +120,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     }
     const filtered = res?.filter(item => {
       if (type === 'task') {
-        return item.taskId?.toLowerCase().includes(value.toLowerCase())
+        return item.task_id?.toLowerCase().includes(value.toLowerCase())
       }
       if (type === 'user') {
         return item.username?.toLowerCase().includes(value.toLowerCase())
@@ -151,7 +151,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     // // 创建工作表
     // const ws = XLSX.utils.json_to_sheet(
     //   dataList.map(item => ({
-    //     用户主页: `https://www.douyin.com/user/${item.userId}?from_tab_name=live`,
+    //     用户主页: `https://www.douyin.com/user/${item.user_id}?from_tab_name=live`,
     //     用户名: item.username,
     //     弹幕: item.content,
     //     发送时间: dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss')
@@ -227,7 +227,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
           </Flex>
           <Table
             loading={loading}
-            rowKey="messageId"
+            rowKey="message_id"
             size="large"
             dataSource={dataList}
             columns={columns}

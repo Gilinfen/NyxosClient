@@ -31,9 +31,9 @@ const ListLiveMoom: React.FC<{
           pageSize: 10
         }}
         footer={<div>👏👏👏</div>}
-        rowKey={item => item.taskId}
+        rowKey={item => item.task_id}
         renderItem={item => (
-          <List.Item key={item.taskId}>
+          <List.Item key={item.task_id}>
             <Skeleton avatar title={false} loading={item.loading} active>
               <List.Item.Meta
                 avatar={

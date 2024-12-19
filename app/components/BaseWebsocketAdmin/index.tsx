@@ -13,12 +13,14 @@ import UpdateLive from './UpdateLive'
 import type { BaseWebsocketAdminProps, TaskListType } from './types'
 
 const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
-  appType,
-  barrageCount,
-  messagesInfo,
+  app_type,
+  loading,
+  taskList,
+  barrage_ount,
+  messages_info,
   MessageConent,
   MessageIconsArrCom,
-  onlineCount,
+  online_count,
   AddFormItems,
   updateWebSocketTask: _updateWebSocketTask,
   getWebsocketTask,
@@ -26,26 +28,10 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
   exportExcel: _exportExcel,
   importExcel: _importExcel,
   updateWebSocketTaskItem: _updateWebSocketTaskItem,
-  clearAllWebSocketTask,
-  disconnecItemtWebSocketTask
+  clearAllWebSocketTask
 }) => {
-  // 任务列表
-  const [taskList, setTaskList] = useState<TaskListType[]>([])
   const [isList, setIsList] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [messageApi, contextHolder] = message.useMessage()
-
-  const getTaskAll = () => {
-    getWebsocketTask?.().then(res => {
-      if (res) {
-        setTaskList(state => [...state, res])
-      }
-    })
-  }
-
-  useEffect(() => {
-    getTaskAll()
-  }, [])
 
   const updateWebSocketTask: BaseWebsocketAdminProps['updateWebSocketTask'] =
     async (type, item) => {
@@ -66,7 +52,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
             messageApi.warning('未知操作类型')
             break
         }
-        getTaskAll()
+        // getTaskAll()
       } catch (error: any) {
         messageApi.error(`操作失败: ${error?.message}`)
       }
@@ -94,7 +80,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
             messageApi.warning('未知操作类型')
             break
         }
-        getTaskAll()
+        // getTaskAll()
       } catch (error: any) {
         messageApi.error(`操作失败: ${error?.message}`)
       }
@@ -105,7 +91,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
     // const ws = XLSX.utils.json_to_sheet(
     //   taskList.map(item => {
     //     return {
-    //       任务ID: item.taskId,
+    //       任务ID: item.task_id,
     //       直播间名称: item.taskName,
     //       平台: 'apptypename',
     //       直播间地址: item.liveUrl,
@@ -150,7 +136,8 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
           </Button>
           <UpdateLive
             type="add"
-            appType={appType}
+            key={'add_UpdateLive'}
+            app_type={app_type}
             FormItems={AddFormItems}
             updateWebSocketTask={updateWebSocketTask}
             className="flex-1"
@@ -188,14 +175,15 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
           <Flex gap="middle" wrap="wrap" justify="space-between" align="start">
             {taskList.map(item => (
               <CardLiveMoom
+                key={item.task_id}
                 MessageConent={MessageConent}
-                messagesInfo={messagesInfo}
+                messages_info={messages_info}
+                AddFormItems={AddFormItems}
                 MessageIconsArrCom={MessageIconsArrCom}
-                key={item.taskId}
-                barrageCount={barrageCount}
-                onlineCount={onlineCount}
+                barrage_ount={barrage_ount}
+                online_count={online_count}
                 data={item}
-                appType={appType}
+                app_type={app_type}
                 updateWebSocketTask={updateWebSocketTask}
                 updateWebSocketTaskItem={updateWebSocketTaskItem}
               />

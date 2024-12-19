@@ -32,10 +32,10 @@ const MessageConent = ({
   //       ...prevMessages,
   //       {
   //         message: '新消息',
-  //         messageId: Date.now().toString(),
-  //         userName: '用户',
-  //         userUrl: '',
-  //         userId: '用户ID'
+  //         message_id: Date.now().toString(),
+  //         user_name: '用户',
+  //         user_url: '',
+  //         user_id: '用户ID'
   //       }
   //     ])
   //   }, 1000)
@@ -61,7 +61,7 @@ const MessageConent = ({
     <>
       <Flex ref={containerRef} {...FlexProps}>
         <Skeleton active loading={false}>
-          {data.status === 'disconnected' && !isEmpty ? (
+          {data.task_status === 'disconnected' && !isEmpty ? (
             <Flex justify="center" align="center" className="w-full">
               <Empty description="未连接" />
             </Flex>
@@ -70,12 +70,16 @@ const MessageConent = ({
               {messages.length > 0
                 ? messages.map(msg => (
                     <ChatItem
-                      key={msg.messageId}
-                      messagesInfo={msg}
+                      key={msg.message_id}
+                      messages_info={msg}
                       className={className}
                     />
                   ))
-                : !isEmpty && <Empty description="暂无弹幕" />}
+                : !isEmpty && (
+                    <Flex justify="center" align="center" className="w-full">
+                      <Empty description="暂无弹幕" />
+                    </Flex>
+                  )}
             </>
           )}
         </Skeleton>

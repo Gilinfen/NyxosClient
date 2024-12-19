@@ -43,15 +43,15 @@ export const KeywordsCom = ({
   value,
   onChange
 }: {
-  value?: string[]
-  onChange?: (value: string[]) => void
+  value?: string
+  onChange?: (value?: string) => void
 }) => {
-  const [inputValue, setInputValue] = useState('')
+  const [inputValue, setInputValue] = useState<string>()
   const handleAdd = () => {
-    if (inputValue && !value?.includes(inputValue)) {
-      onChange?.([...(value ?? []), inputValue])
+    if (inputValue && !value?.split(',').includes(inputValue)) {
+      onChange?.(value ? `${value},${inputValue}` : `${inputValue}`)
     }
-    setInputValue('')
+    setInputValue(void 0)
   }
   return (
     <Flex gap={12} wrap align="center">
@@ -61,8 +61,8 @@ export const KeywordsCom = ({
           icon={<DeleteOutlined />}
           danger
           onClick={() => {
-            setInputValue('')
-            onChange?.([])
+            setInputValue(void 0)
+            onChange?.(void 0)
           }}
         >
           清空
@@ -92,37 +92,43 @@ export const KeywordsCom = ({
           closable
         />
       )}
-      <Flex gap={4} wrap align="center" className="w-full">
-        {value?.map<React.ReactNode>(tag => (
-          <Button
-            type="text"
-            key={tag}
-            // icon={<DeleteOutlined />}
-            onClick={() => {
-              onChange?.(value.filter(item => item !== tag))
-            }}
-          >
-            {tag}
-          </Button>
-        ))}
-      </Flex>
+      {value ? (
+        <Flex gap={4} wrap align="center" className="w-full">
+          {value.split(',')?.map<React.ReactNode>(tag => (
+            <Button
+              type="text"
+              key={tag}
+              onClick={() => {
+                onChange?.(
+                  value
+                    .split(',')
+                    .filter(item => item !== tag)
+                    .join(',')
+                )
+              }}
+            >
+              {tag}
+            </Button>
+          ))}
+        </Flex>
+      ) : null}
     </Flex>
   )
 }
 
 export interface UpdateLiveProps {
   type: 'add' | 'update'
-  appType: BaseWebsocketAdminProps['appType']
+  app_type: BaseWebsocketAdminProps['app_type']
   data?: UpdateLiveForm
   updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   className?: string
   children?: React.ReactNode
-  FormItems?: React.ReactElement[]
+  FormItems?: React.ReactNode[]
 }
 
 export default function UpdateLive({
   type,
-  appType,
+  app_type,
   data,
   updateWebSocketTask,
   className,
@@ -139,8 +145,8 @@ export default function UpdateLive({
       form.setFieldsValue(data)
     } else if (type === 'add') {
       form.setFieldsValue({
-        taskName: '测试',
-        appType
+        task_name: '测试',
+        app_type
       })
     }
   }, [data, form, type])
@@ -176,7 +182,7 @@ export default function UpdateLive({
         <Form<UpdateLiveForm> form={form} layout="vertical" onFinish={handleOk}>
           <Form.Item<UpdateLiveForm>
             label="直播间链接"
-            name="liveUrl"
+            name="live_url"
             rules={[
               {
                 required: true,
@@ -188,12 +194,12 @@ export default function UpdateLive({
           </Form.Item>
           <Form.Item<UpdateLiveForm>
             label="自定义直播间名称"
-            name="taskName"
+            name="task_name"
             rules={[{ required: true, message: '请输入自定义直播间名称' }]}
           >
             <Input placeholder="请输入自定义直播间名称" allowClear />
           </Form.Item>
-          {FormItems?.map(item => item)}
+          {FormItems}
           <Form.Item<UpdateLiveForm>
             label="直播间描述（选填）"
             name="description"

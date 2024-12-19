@@ -16,6 +16,7 @@ import {
   Empty,
   Flex,
   Input,
+  Popconfirm,
   Popover,
   QRCode,
   Space,
@@ -29,7 +30,7 @@ import type { BaseWebsocketAdminProps, TaskListType } from './types'
 
 export const Setting = () => {
   return (
-    <Tooltip key="edit" title="编辑">
+    <Tooltip title="编辑">
       <Button
         type="text"
         className="scale-[1.5] mt-[.2rem] "
@@ -40,18 +41,18 @@ export const Setting = () => {
 }
 
 const Reload = ({
+  data,
   updateWebSocketTaskItem
 }: {
+  data: CardLiveMoomProps['data']
   updateWebSocketTaskItem: CardLiveMoomProps['updateWebSocketTaskItem']
 }) => {
   const [isReloading, setIsReloading] = useState(false)
 
-  const handleReload = () => {
+  const handleReload = async () => {
     setIsReloading(true)
-    updateWebSocketTaskItem?.({} as any, 'reload')
-    setTimeout(() => {
-      setIsReloading(false)
-    }, 1000)
+    await updateWebSocketTaskItem?.(data, 'reload')
+    setIsReloading(false)
   }
 
   return (
@@ -68,17 +69,17 @@ const Reload = ({
 }
 
 export const ChatItem = ({
-  messagesInfo,
+  messages_info,
   width,
   className,
   isAdmin
 }: {
-  messagesInfo?: BaseWebsocketAdminProps['messagesInfo']
+  messages_info?: BaseWebsocketAdminProps['messages_info']
   className?: string
   width?: string
   isAdmin?: boolean
 }) => {
-  // const userUrl = `https://www.douyin.com/user/${messagesInfo?.userId}?from_tab_name=live`
+  // const user_url = `https://www.douyin.com/user/${messages_info?.user_id}?from_tab_name=live`
 
   return (
     <motion.div
@@ -101,8 +102,8 @@ export const ChatItem = ({
     >
       <Flex gap="small" className={cn('mb-[1rem] ', className)} wrap="wrap">
         <Flex gap="small" align="center">
-          <a href={messagesInfo?.userUrl} target="_blank" rel="noreferrer">
-            {messagesInfo?.userName}
+          <a href={messages_info?.user_url} target="_blank" rel="noreferrer">
+            {messages_info?.user_name}
           </a>
         </Flex>
         <Flex
@@ -118,8 +119,8 @@ export const ChatItem = ({
           >
             <div className="absolute top-0 left-0 w-[2.5rem] h-[2.5rem] rounded-[50%] border-[.2rem] border-[#cdcdcd] flex items-center justify-center" />
             <ScanOutlineComponent
-              url={messagesInfo?.userUrl}
-              title={messagesInfo?.userName}
+              url={messages_info?.user_url}
+              title={messages_info?.user_name}
               className={'scale-[1.5]'}
             />
           </Flex>
@@ -129,7 +130,7 @@ export const ChatItem = ({
             className="bg-[#f1f3f5] min-h-[2.5rem] min-w-[2.5rem] flex-1 p-[.5rem] rounded-2xl   "
             wrap="wrap"
           >
-            {messagesInfo?.message}
+            {messages_info?.message}
           </Flex>
         </Flex>
       </Flex>
@@ -139,18 +140,20 @@ export const ChatItem = ({
 
 export const getActions = ({
   data,
-  appType,
+  app_type,
+  AddFormItems,
   updateWebSocketTask,
   updateWebSocketTaskItem
 }: Omit<
   CardLiveMoomProps,
-  'MessageIconsArrCom' | 'messagesInfo'
+  'MessageIconsArrCom' | 'messages_info'
 >): React.ReactNode[] => {
   return [
     <UpdateLive
-      key="edit"
+      key="edit_UpdateLive"
       type="update"
-      appType={appType}
+      app_type={app_type}
+      FormItems={AddFormItems}
       updateWebSocketTask={async (type, item) =>
         updateWebSocketTask?.(type, item)
       }
@@ -161,7 +164,7 @@ export const getActions = ({
       <Setting />,
     </UpdateLive>,
     <Flex key="expand" justify="center" align="center">
-      <Reload updateWebSocketTaskItem={updateWebSocketTaskItem} />
+      <Reload data={data} updateWebSocketTaskItem={updateWebSocketTaskItem} />
     </Flex>,
     <Flex
       key="delete"
@@ -169,21 +172,33 @@ export const getActions = ({
       align="center"
       className="text-[#df4257] cursor-pointer h-full"
     >
-      <Tooltip title="删除">
-        <Button
-          danger
-          type="text"
-          className="scale-[1.5] mt-[.2rem] "
-          icon={<DeleteOutlined />}
-          onClick={() => updateWebSocketTask?.('delete')}
-        />
+      <Tooltip title="删除任务">
+        <Popconfirm
+          title="删除任务（不可逆）"
+          description={
+            <>
+              <li>此操作会关闭当前连接</li>
+              <li>以及当前任务所有数据</li>
+            </>
+          }
+          onConfirm={() => updateWebSocketTask?.('delete', data)}
+          okText="确定"
+          cancelText="取消"
+        >
+          <Button
+            danger
+            type="text"
+            className="scale-[1.5] mt-[.2rem] "
+            icon={<DeleteOutlined />}
+          />
+        </Popconfirm>
       </Tooltip>
     </Flex>
   ]
 }
 
 const appTypeOptions: {
-  [key in TaskListType['appType']]: ReactNode
+  [key in TaskListType['app_type']]: ReactNode
 } = {
   douyin: <TikTokOutlined className="scale-[1.5]" />,
   tiktok: <TikTokOutlined className="scale-[1.5]" />
@@ -192,7 +207,7 @@ const appTypeOptions: {
 const LiveImage = ({ data }: { data: TaskListType }) => {
   return (
     <div className=" text-[var(--g-active-color)] flex w-[2rem] h-[2rem] items-center justify-center  rounded-[50%] border-[.2rem] border-[#282a35] ">
-      {appTypeOptions[data.appType]}
+      {appTypeOptions[data.app_type]}
     </div>
   )
 }
@@ -255,7 +270,7 @@ export const LiveLoading = ({
       align="center"
       className="relative cursor-pointer"
       onClick={() => {
-        if (data.status === 'disconnected') {
+        if (data.task_status === 'disconnected') {
           updateWebSocketTaskItem?.(data, 'start')
         } else {
           updateWebSocketTaskItem?.(data, 'stop')
@@ -263,10 +278,12 @@ export const LiveLoading = ({
       }}
     >
       <Tooltip
-        title={`${data.status === 'disconnected' ? '点击开启' : '点击暂停'}`}
+        title={`${
+          data.task_status === 'disconnected' ? '点击开启' : '点击暂停'
+        }`}
       >
         <motion.div>
-          {data.status === 'connecting' ? (
+          {data.task_status === 'connecting' ? (
             <LiveLive data={data} />
           ) : (
             <LiveImage data={data} />
@@ -284,13 +301,13 @@ export interface CardLiveMoomProps {
    */
   MessageConent: BaseWebsocketAdminProps['MessageConent']
   MessageIconsArrCom: BaseWebsocketAdminProps['MessageIconsArrCom']
-  onlineCount: BaseWebsocketAdminProps['onlineCount']
-  barrageCount: BaseWebsocketAdminProps['barrageCount']
-  messagesInfo: BaseWebsocketAdminProps['messagesInfo']
-  appType: BaseWebsocketAdminProps['appType']
+  AddFormItems: BaseWebsocketAdminProps['AddFormItems']
+  online_count: BaseWebsocketAdminProps['online_count']
+  barrage_ount: BaseWebsocketAdminProps['barrage_ount']
+  messages_info: BaseWebsocketAdminProps['messages_info']
+  app_type: BaseWebsocketAdminProps['app_type']
   updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
-  loading?: boolean
 }
 
 export const CardTitle = ({ data }: { data: TaskListType }) => {
@@ -303,15 +320,15 @@ export const CardTitle = ({ data }: { data: TaskListType }) => {
       ) : (
         <NumberOutlined className="scale-[1.2]  " />
       )} */}
-      <ScanOutlineComponent url={data.liveUrl} title="扫码进入直播间" />
+      <ScanOutlineComponent url={data.live_url} title="扫码进入直播间" />
       <Tooltip title={`点击进入直播间`}>
         <a
           className="text-[#000] hover:text-[var(--g-active-color)] cursor-pointer "
-          href={data.liveUrl}
+          href={data.live_url}
           target="_blank"
           rel="noreferrer"
         >
-          {data.taskName}
+          {data.task_name}
         </a>
       </Tooltip>
     </Flex>
@@ -343,7 +360,7 @@ export const Duration = ({ data }: { data: TaskListType }) => {
 
   return (
     <Tooltip title={'任务持续时间'}>
-      {data.status === 'connecting' ? (
+      {data.task_status === 'connecting' ? (
         <span>{duration}</span>
       ) : (
         <span>00:00:00</span>
@@ -379,16 +396,16 @@ export const ScanOutlineComponent = ({
 }
 
 export const Livepeople = ({
-  onlineCount
+  online_count
 }: {
-  onlineCount: BaseWebsocketAdminProps['onlineCount']
+  online_count: BaseWebsocketAdminProps['online_count']
 }) => {
   return (
     <Flex gap="small" align="center" justify="start">
       <Tooltip title="在线">
         <Space>
           <TeamOutlined />
-          {onlineCount}
+          {online_count}
           <span>人在线</span>
         </Space>
       </Tooltip>
@@ -396,16 +413,16 @@ export const Livepeople = ({
   )
 }
 export const DanmuCount = ({
-  barrageCount
+  barrage_ount
 }: {
-  barrageCount: BaseWebsocketAdminProps['barrageCount']
+  barrage_ount: BaseWebsocketAdminProps['barrage_ount']
 }) => {
   return (
     <Flex gap="small" align="center" justify="start">
       <Tooltip title="弹幕">
         <Space>
           <BoldOutlined />
-          {barrageCount}
+          {barrage_ount}
         </Space>
       </Tooltip>
     </Flex>
@@ -437,21 +454,21 @@ export const CardLiveMoomLoading = () => {
 }
 
 const MemberEnter = ({
-  messagesInfo,
+  messages_info,
   className
 }: {
-  messagesInfo?: any
+  messages_info?: any
   className: string
 }) => {
   return (
     <Flex justify="start" align="center" className={className}>
-      {messagesInfo && (
+      {messages_info && (
         <ChatItem
-          key={messagesInfo.messageId}
+          key={messages_info.message_id}
           isAdmin={true}
           width="100%"
           className="w-full"
-          messagesInfo={messagesInfo}
+          messages_info={messages_info}
         />
       )}
     </Flex>
@@ -506,18 +523,19 @@ export const MessagetypeRender = ({
 
 const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
   data,
-  messagesInfo,
-  barrageCount,
-  onlineCount,
+  messages_info,
+  barrage_ount,
+  online_count,
+  AddFormItems,
   MessageIconsArrCom,
   MessageConent,
-  appType,
+  app_type,
   updateWebSocketTask,
   updateWebSocketTaskItem
 }) => {
   return (
     <Flex justify="center" align="center" className="relative">
-      {data.loading && <CardLiveMoomLoading />}
+      {data.task_status === 'reconnecting' && <CardLiveMoomLoading />}
       <Card
         bordered
         title={
@@ -529,7 +547,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
               justify="start"
               className="text-[.8rem] absolute top-[0rem] left-[1.6rem]"
             >
-              <Livepeople onlineCount={onlineCount} />
+              <Livepeople online_count={online_count} />
             </Flex>
             <Flex
               gap="small"
@@ -537,7 +555,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
               justify="start"
               className="text-[.8rem] absolute top-[2.1rem] left-[1.6rem]"
             >
-              <DanmuCount barrageCount={barrageCount} />
+              <DanmuCount barrage_ount={barrage_ount} />
             </Flex>
           </>
         }
@@ -545,7 +563,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
           <div className="relative w-[100%]">
             <MessagetypeRender MessageConent={MessageConent} data={data} />
             <MemberEnter
-              messagesInfo={messagesInfo}
+              messages_info={messages_info}
               className="absolute w-full  bottom-[-5.1rem] left-0 right-0 px-[1rem]"
             />
             <div className="absolute bottom-0 left-0 right-0 h-[2rem] bg-gradient-to-t from-white to-transparent"></div>
@@ -560,10 +578,11 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
         }
         actions={getActions({
           data,
-          appType,
+          app_type,
+          AddFormItems,
           MessageConent,
-          barrageCount,
-          onlineCount,
+          barrage_ount,
+          online_count,
           updateWebSocketTask,
           updateWebSocketTaskItem
         })}

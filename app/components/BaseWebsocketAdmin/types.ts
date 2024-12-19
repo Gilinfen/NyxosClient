@@ -1,33 +1,28 @@
 import type { WebSocketTaskType } from '~/types/WebSocketdDB'
-import { type UpdateLiveForm, type UpdateLiveProps } from './UpdateLive'
+import { type UpdateLiveProps } from './UpdateLive'
+import type { ReactNode } from 'react'
 export type BaseAppTypes = 'douyin' | 'tiktok'
 
-export interface TaskListType extends WebSocketTaskType {
-  loading?: boolean
-}
+export interface TaskListType extends WebSocketTaskType {}
 
 export type TaskItemStatus = 'start' | 'stop' | 'reload'
 
 /**
  * 弹幕消息接口
- * @property {string} userId - 用户的唯一标识符
- * @property {string} messageId - 消息的唯一标识符
- * @property {string} userName - 用户的名称
- * @property {string} message - 用户发送的消息内容
  */
 export interface DanmuMessage {
   /**
    * 用户的唯一标识符
    */
-  userId: string
+  user_id: string
   /**
    * 消息的唯一标识符
    */
-  messageId: string
+  message_id: string
   /**
    * 用户的名称
    */
-  userName: string
+  user_name: string
   /**
    * 用户发送的消息内容
    */
@@ -35,28 +30,37 @@ export interface DanmuMessage {
   /**
    * 用户 主页
    */
-  userUrl: string
+  user_url: string
 }
 
 export interface BaseWebsocketAdminProps {
   /**
    * 应用类型
    */
-  appType: BaseAppTypes
+  app_type: BaseAppTypes
+  /**
+   * 整个组件 loading
+   */
+  loading?: boolean
+  /**
+   * 任务列表
+   */
+  taskList: TaskListType[]
   /**
    * 弹幕数量
    */
-  barrageCount: number
+  barrage_ount: number
 
   /**
    * 在线人数
    */
-  onlineCount: number
+  online_count: number
 
   /**
    * 用户连接后的信息
    */
-  messagesInfo?: DanmuMessage
+  messages_info?: DanmuMessage
+
   /**
    * 添加自定义字段
    */
@@ -85,12 +89,12 @@ export interface BaseWebsocketAdminProps {
   ) => Promise<void>
   /**
    * 获取单个或者全部任务的信息
-   * @param taskId taskId 存在查询一个，否则查询全部
+   * @param task_id task_id 存在查询一个，否则查询全部
    * @returns
    */
   getWebsocketTask?: (
-    taskId?: TaskListType['taskId']
-  ) => Promise<TaskListType | undefined>
+    task_id?: TaskListType['task_id']
+  ) => Promise<TaskListType[] | TaskListType | undefined>
   /**
    * 搜索
    * @returns
@@ -121,10 +125,4 @@ export interface BaseWebsocketAdminProps {
    * @returns
    */
   clearAllWebSocketTask?: () => Promise<void>
-  /**
-   * 关闭单个 WebSocket 连接
-   * @param data
-   * @returns
-   */
-  disconnecItemtWebSocketTask?: (data: TaskListType) => Promise<void>
 }

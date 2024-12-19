@@ -8,7 +8,7 @@ import type { Route } from './+types/root'
 import webmssdk from './assets/douyin/webmssdk?url'
 import Login from './login'
 import { useEffect, useState, type ReactNode } from 'react'
-import Database from '@tauri-apps/plugin-sql'
+// import Database from '@tauri-apps/plugin-sql'
 import zhCN from 'antd/locale/zh_CN'
 import LayoutConents from './Layout'
 
@@ -50,16 +50,16 @@ export type User = {
 }
 
 export default function App() {
-  const [isToken, setisToken] = useState<TOKEN_STATUS_KEYS>('isToken')
+  const [isToken, setisToken] = useState<TOKEN_STATUS_KEYS>('isTokerSuccess')
   async function getUsers() {
     try {
-      const db = await Database.load('sqlite:test.db')
-      const dbUsers = await db.select<User[]>('SELECT * FROM users')
-      if (dbUsers.some(e => e.status === 'isTokerSuccess')) {
-        setisToken('isTokerSuccess')
-      } else {
-        setisToken('isToktonErr')
-      }
+      // const db = await Database.load('sqlite:test.db')
+      // const dbUsers = await db.select<User[]>('SELECT * FROM users')
+      // if (dbUsers.some(e => e.status === 'isTokerSuccess')) {
+      //   setisToken('isTokerSuccess')
+      // } else {
+      //   setisToken('isToktonErr')
+      // }
     } catch (error) {
       console.log(error)
       setisToken('isTokerSuccess')

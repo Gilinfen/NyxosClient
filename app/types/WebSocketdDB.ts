@@ -2,29 +2,25 @@ export interface WebSocketTaskType {
   /**
    * WebSocket 连接的任务ID
    */
-  taskId: string
+  task_id: string
   /**
    * 应用名称
    */
-  taskName: string
+  task_name: string
   /**
    * 应用类型
    */
-  appType: string
+  app_type: string
   /**
    * 连接的URL
    */
-  liveUrl: string
+  live_url: string
   /**
    *  connecting: 连接中
    *  disconnected: 断开
    *  reconnecting: 重连
    */
-  status: 'connecting' | 'disconnected' | 'reconnecting'
-  /**
-   * 消息类型
-   */
-  messageType: string
+  task_status: 'connecting' | 'disconnected' | 'reconnecting'
   /**
    * 直播间描述
    */
