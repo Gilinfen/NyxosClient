@@ -406,11 +406,11 @@ export const DanmuCount = ({
   barrage_ount: BaseWebsocketAdminProps['barrage_ount']
 }) => {
   return (
-    <Flex gap="small" align="center" justify="start">
+    <Flex gap="small" align="center" className="mt-[.2rem]" justify="start">
       <Tooltip title="已记录弹幕">
         <Space>
           <BoldOutlined />
-          {barrage_ount}
+          {barrage_ount} 弹幕
         </Space>
       </Tooltip>
     </Flex>

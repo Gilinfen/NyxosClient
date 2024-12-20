@@ -56,8 +56,6 @@ export const deleteData = async ({
     console.log(`正在删除表: ${table}，条件: ${key} = ${value}`)
   } else {
     // 删除所有数据
-    await db.execute(`DELETE FROM ${table}`)
-    console.log(`正在删除表: ${table}，所有数据已被删除`)
 
     // 根据 DB_TABLE_TYPES 删除子表
     const subTables =
@@ -68,6 +66,10 @@ export const deleteData = async ({
       await db.execute(`DELETE FROM ${subTable}`)
       console.log(`正在删除子表: ${subTable}，所有数据已被删除`)
     }
+
+    console.log(`正在删除表: ${table}`)
+    await db.execute(`DELETE FROM ${table}`)
+    console.log(`所有数据已被删除`)
   }
 }
 

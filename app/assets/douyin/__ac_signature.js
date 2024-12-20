@@ -761,6 +761,7 @@ var glb
             : ''))
     } catch (e) {}
   }
+  window.DOUYIN_API = {}
   window.DOUYIN_API.get__ac_signature = function (__ac_nonce) {
     window.byted_acrawler.init({ aid: 99999999, dfp: 0 })
     document.referrer = 'https://www.douyin.com/'

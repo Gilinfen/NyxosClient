@@ -13,7 +13,7 @@ import type {
   TaskListType
 } from '~/components/BaseWebsocketAdmin/types'
 // 导入 Ant Design 的表单和选择组件
-import { Form, Select } from 'antd'
+import { Form, message, Select } from 'antd'
 // 导入关键词组件
 import { KeywordsCom } from '~/components/BaseWebsocketAdmin/UpdateLive'
 // 导入抖音 WebSocket 任务数据库类型
@@ -289,13 +289,15 @@ export default function DouyinPage() {
     async () => {
       try {
         setLoading(true) // 设置加载状态为 true
-        await delay(2000) // 延迟 2 秒
         await deleteData({
           table: 'tasks',
           dbName: 'douyin' // 删除任务表中的所有任务
         })
+
         await getTaskAll() // 更新任务列表
         setLoading(false) // 设置加载状态为 false
+
+        message.success('已清除所有任务')
         // 这里可以添加清除所有任务的逻辑
         console.log('清除所有 WebSocket 任务') // 打印清除任务信息
       } catch (error) {
@@ -317,8 +319,6 @@ export default function DouyinPage() {
   // 连接单个 WebSocket 任务
   const connectingItemtWebSocketTask = async (data: TaskListType) => {
     try {
-      console.log(123213123)
-
       const wsurl = await DouyinBaseInject.getWebsocketUrl(data.live_url)
 
       if (!wsurl) return
@@ -338,8 +338,10 @@ export default function DouyinPage() {
 
       // 这里可以添加连接单个任务的逻辑
       console.log('连接任务:', data) // 打印连接任务信息
+      message.success('连接成功')
     } catch (error) {
       console.error('连接任务失败:', error) // 处理错误
+      message.error('连接失败')
     }
   }
 
@@ -387,8 +389,10 @@ export default function DouyinPage() {
         }
 
         await updateDatafn(newData) // 更新数据库中的任务数据
+        message.success('更新任务状态成功')
       } catch (error) {
         console.error('更新任务状态失败:', error) // 处理错误
+        message.error('更新任务状态失败')
       }
     }
 
@@ -572,8 +576,7 @@ export default function DouyinPage() {
         app_type="douyin" // 传递应用类型
         updateWebSocketTask={updateWebSocketTask} // 传递更新任务函数
         getWebsocketTask={getWebsocketTask} // 传递获取任务函数
-        // MessageConent={({ data }) => <MessageConent data={data} />} // 传递消息内容组件
-        MessageConent={MessageConentMemo}
+        MessageConent={MessageConentMemo} // 传递消息内容组件
         MessageIconsArrCom={MessageIconsArrComMemo}
         AddFormItems={AddFormItemsMemo}
         onSearch={onSearch} // 传递搜索函数

@@ -545,6 +545,7 @@ function generate_a_bogus(url_search_params, user_agent) {
   return result_encrypt(result_str, 's4') + '='
 }
 
+window.DOUYIN_API = {}
 window.DOUYIN_API.generate_a_bogus = generate_a_bogus
 
 // //测试调用

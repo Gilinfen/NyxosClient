@@ -5,9 +5,6 @@ import {
   isRouteErrorResponse
 } from 'react-router'
 import type { Route } from './+types/root'
-import windows from './window?url'
-// import __ac_signature from './assets/douyin/__ac_signature?url'
-// import webmssdk from './assets/douyin/webmssdk?url'
 import Login from './login'
 import { useEffect, useState, type ReactNode } from 'react'
 import zhCN from 'antd/locale/zh_CN'
@@ -87,7 +84,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="stylesheet" href={globalscss} />
-        <script src={windows}></script>
         {/* <script src={__ac_signature} async></script> */}
         {/* <script src={webmssdk} async></script> */}
       </head>

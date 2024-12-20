@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Flex, Divider, Empty, Skeleton, message } from 'antd'
+import { Button, Flex, Divider, Empty, Skeleton, message, Modal } from 'antd'
 import {
   AppstoreOutlined,
   DownloadOutlined,
@@ -153,7 +153,23 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
           <Button icon={<UploadOutlined />} onClick={importExcel}>
             导入 Excel
           </Button>
-          <Button danger onClick={clearAllWebSocketTask}>
+          <Button
+            danger
+            onClick={() => {
+              Modal.warning({
+                title: '清空所有任务！！！',
+                content:
+                  '当前操作会将所有数据清除，包括管理的用户和其他数据！！！（操作不可逆）',
+                cancelText: '取消',
+                closable: true,
+                okText: '确定',
+                okType: 'danger',
+                onOk() {
+                  clearAllWebSocketTask?.()
+                }
+              })
+            }}
+          >
             清空
           </Button>
         </Flex>
