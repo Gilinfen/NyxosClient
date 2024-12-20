@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 // 导入 BaseWebsocketAdmin 组件
 import BaseWebsocketAdmin from '~/components/BaseWebsocketAdmin'
@@ -17,30 +17,46 @@ import { Form, Select } from 'antd'
 // 导入关键词组件
 import { KeywordsCom } from '~/components/BaseWebsocketAdmin/UpdateLive'
 // 导入抖音 WebSocket 任务数据库类型
-import type { DouyinWebSocketTaskDb } from '~/db/douyin'
+import type {
+  DouyinWebSocketDanmaDb,
+  DouyinWebSocketTaskDb,
+  DouyinWebSocketUserDb
+} from '~/db/douyin/index'
 // 导入数据库操作工具函数
-import { deleteData, getDbData, insertData, updateData } from '~/db/utils'
+import {
+  deleteData,
+  getAllData,
+  getDbData,
+  insertData,
+  updateData
+} from '~/db/utils'
 // 导入 UUID 生成器
 import { v4 as uuidV4 } from 'uuid'
 // 导入延迟工具函数
-import { delay, poll } from '~/utils'
+import { delay, poll, saveExcelFile } from '~/utils'
 // 导入消息类
-import { Message } from './message'
 import { DouyinAPIEndpoints } from './urls'
 import type { DouyinAPIEndpointsInterface } from './url_params/index'
 import { makeRequest, objectToParams } from '~/utils/request'
 import { DouyinCookieApi } from './api/cookie'
 import DouyinBaseInject from './api/base'
 import { getUserAgent } from '~/common/api'
+import { connect_to_websocket } from '~/utils/websocket'
+import type { DouyinMessageType } from '~/db/douyin/message'
+import { DouyinMessage } from './message/index'
+import { tsListen } from '~/utils/listen'
+import * as XLSX from 'xlsx'
+import dayjs from 'dayjs'
 
 // 定义抖音页面组件
 export default function DouyinPage() {
   // 定义在线用户数量状态
   const [online_count, setonlineCount] = useState<number>(0)
   // 定义弹幕数量状态
+  // const barrage_ount = useRef<number>(0)
   const [barrage_ount, setbarrageCount] = useState<number>(0)
-  // 定义消息信息状态
-  const [messages_info, setmessagesInfo] = useState<DanmuMessage>()
+  // 定义成员进入消息信息
+  const [messages_info, setmessagesInfo] = useState<DouyinWebSocketDanmaDb>()
   // 定义任务列表状态
   const [taskList, setTaskList] = useState<TaskListType[]>([])
   // 定义加载状态
@@ -49,7 +65,7 @@ export default function DouyinPage() {
   const [messageTypeState, setmessageTypeState] = useState<
     {
       label: string
-      value: keyof Message
+      value: keyof DouyinMessageType
     }[]
   >([])
 
@@ -61,10 +77,61 @@ export default function DouyinPage() {
       'loggedOut'
     )
 
+  const messageEffect: BaseWebsocketAdminProps['MemberEnterProps']['messageEffect'] =
+    data => {
+      tsListen<DouyinMessageType['DouyinWebcastMemberMessage']['payload']>(
+        'DouyinWebcastMemberMessage',
+        async val => {
+          const payload = val.payload
+          if (payload) {
+            const menber: DouyinWebSocketUserDb = {
+              ...payload,
+              task_id: data.task_id,
+              user_url: `https://www.douyin.com/user/${payload.user_id}`,
+              timestamp: Date.now()
+            }
+
+            setmessagesInfo({
+              ...menber,
+              message: '进人直播间'
+            } as DouyinWebSocketDanmaDb)
+
+            setonlineCount(payload.member_count)
+
+            await insertData<DouyinWebSocketUserDb>({
+              table: 'tasks_users',
+              data: {
+                user_id: menber.user_id,
+                task_id: menber.task_id,
+                timestamp: menber.timestamp,
+                user_name: menber.user_name,
+                user_url: menber.user_url
+              },
+              dbName: 'douyin' // 请替换为实际的数据库名称
+            })
+          }
+        }
+      )
+    }
+
+  useEffect(() => {
+    const timeid = setInterval(async () => {
+      const res = await getAllData<DouyinWebSocketDanmaDb[]>(
+        'tasks_danmu',
+        'douyin'
+      )
+      // barrage_ount.current = res.length
+      setbarrageCount(res.length)
+    }, 1000)
+    return () => {
+      clearInterval(timeid)
+    }
+  }, [])
+
   // 使用副作用钩子获取任务和消息类型
   useEffect(() => {
     getTaskAll() // 获取所有任务
-    const dy_message_types = new Message() // 创建消息实例
+    const dy_message_types = new DouyinMessage() // 创建消息实例
     const messageArray = [] // 存储消息类型的数组
     for (const key in dy_message_types) {
       const value = key as keyof typeof dy_message_types
@@ -77,12 +144,6 @@ export default function DouyinPage() {
       }
     }
     setmessageTypeState(messageArray) //
-
-    DouyinBaseInject.getWebsocketUrl(
-      'https://live.douyin.com/801462738092'
-    ).then(res => {
-      console.log(res)
-    })
   }, [])
 
   // 从数据库获取任务
@@ -183,6 +244,30 @@ export default function DouyinPage() {
   const exportExcel: BaseWebsocketAdminProps['exportExcel'] = async () => {
     try {
       // 这里可以添加导出 Excel 的逻辑
+      const douyinmes = new DouyinMessage()
+      // 创建工作表
+      const ws = XLSX.utils.json_to_sheet(
+        (taskList as DouyinWebSocketTaskDb[]).map(item => {
+          return {
+            任务ID: item.task_id,
+            直播间名称: item.task_name,
+            平台: '抖音',
+            直播间地址: item.description,
+            直播间描述: item.description,
+            消息类型: douyinmes[item.message_type].label,
+            关键词: item.keywords,
+            创建时间: dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss')
+          }
+        })
+      )
+
+      // 创建工作簿
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+
+      // 导出为 Excel 文件
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+      await saveExcelFile(excelBuffer, `抖音所有任务.xlsx`)
       console.log('导出 Excel') // 打印导出信息
     } catch (error) {
       console.error('导出失败:', error) // 处理错误
@@ -232,7 +317,24 @@ export default function DouyinPage() {
   // 连接单个 WebSocket 任务
   const connectingItemtWebSocketTask = async (data: TaskListType) => {
     try {
-      await delay(2000) // 延迟 2 秒
+      console.log(123213123)
+
+      const wsurl = await DouyinBaseInject.getWebsocketUrl(data.live_url)
+
+      if (!wsurl) return
+      // 房间ID
+      const live_room_id = data.live_url.replace('https://live.douyin.com/', '') // 删除live_url字符串中的某些内容
+      const userAgent = await getUserAgent()
+      const ttwid = await DouyinCookieApi.getTtwid()
+
+      await connect_to_websocket({
+        url: wsurl.wsurl,
+        live_room_id,
+        headers: {
+          cookie: `ttwid=${ttwid}`,
+          'user-agent': userAgent
+        }
+      })
 
       // 这里可以添加连接单个任务的逻辑
       console.log('连接任务:', data) // 打印连接任务信息
@@ -410,6 +512,58 @@ export default function DouyinPage() {
     setLoginUrl(void 0)
   }
 
+  const MessageConentMemo = useMemo(() => {
+    return ({ data }: { data: TaskListType }) => <MessageConent data={data} />
+  }, [])
+
+  const MessageIconsArrComMemo = useMemo(() => {
+    return ({ data }: { data: TaskListType }) => [
+      <DanmuAreaChartComponent key={'chats'} data={data} /> // 传递弹幕区域图表组件
+    ]
+  }, [])
+
+  const AddFormItemsMemo = useMemo(() => {
+    return [
+      <Form.Item<DouyinWebSocketTaskDb>
+        label="选择消息类型" // 表单项标签
+        key={'message_type'}
+        name="message_type"
+        rules={[{ required: true, message: '请选择消息类型' }]} // 表单验证规则
+      >
+        <Select placeholder="请选择消息类型" options={messageTypeState} />
+      </Form.Item>,
+      <Form.Item
+        key={'noStyle_key'}
+        noStyle
+        shouldUpdate={
+          (prevValues, currentValues) =>
+            prevValues.message_type !== currentValues.message_type // 监听消息类型变化
+        }
+      >
+        {({ getFieldValue }) => {
+          const messageType = getFieldValue(
+            'message_type'
+          ) as DouyinWebSocketTaskDb['message_type']
+
+          switch (messageType) {
+            case 'DouyinWebcastChatMessage':
+              return (
+                <Form.Item<DouyinWebSocketTaskDb>
+                  label="过滤关键词" // 表单项标签
+                  key={'keywords'}
+                  name="keywords"
+                >
+                  <KeywordsCom />
+                </Form.Item>
+              )
+            default:
+              return null // 默认返回 null
+          }
+        }}
+      </Form.Item>
+    ]
+  }, [messageTypeState])
+
   return (
     <>
       <BaseWebsocketAdmin
@@ -418,55 +572,19 @@ export default function DouyinPage() {
         app_type="douyin" // 传递应用类型
         updateWebSocketTask={updateWebSocketTask} // 传递更新任务函数
         getWebsocketTask={getWebsocketTask} // 传递获取任务函数
-        MessageConent={({ data }) => <MessageConent data={data} />} // 传递消息内容组件
-        MessageIconsArrCom={({ data }) => [
-          <DanmuAreaChartComponent key={'chats'} data={data} /> // 传递弹幕区域图表组件
-        ]}
-        AddFormItems={[
-          <Form.Item<DouyinWebSocketTaskDb>
-            label="选择消息类型" // 表单项标签
-            key={'message_type'}
-            name="message_type"
-            rules={[{ required: true, message: '请选择消息类型' }]} // 表单验证规则
-          >
-            <Select placeholder="请选择消息类型" options={messageTypeState} />{' '}
-          </Form.Item>,
-          <Form.Item
-            key={'noStyle_key'}
-            noStyle
-            shouldUpdate={
-              (prevValues, currentValues) =>
-                prevValues.message_type !== currentValues.message_type // 监听消息类型变化
-            }
-          >
-            {({ getFieldValue }) => {
-              const messageType = getFieldValue(
-                'message_type'
-              ) as DouyinWebSocketTaskDb['message_type']
-
-              switch (messageType) {
-                case 'WebcastChatMessage':
-                  return (
-                    <Form.Item<DouyinWebSocketTaskDb>
-                      label="过滤关键词" // 表单项标签
-                      key={'keywords'}
-                      name="keywords"
-                    >
-                      <KeywordsCom />
-                    </Form.Item>
-                  )
-                default:
-                  return null // 默认返回 null
-              }
-            }}
-          </Form.Item>
-        ]}
+        // MessageConent={({ data }) => <MessageConent data={data} />} // 传递消息内容组件
+        MessageConent={MessageConentMemo}
+        MessageIconsArrCom={MessageIconsArrComMemo}
+        AddFormItems={AddFormItemsMemo}
         onSearch={onSearch} // 传递搜索函数
         exportExcel={exportExcel} // 传递导出 Excel 函数
         importExcel={importExcel} // 传递导入 Excel 函数
         updateWebSocketTaskItem={updateWebSocketTaskItem} // 传递更新任务状态函数
         clearAllWebSocketTask={clearAllWebSocketTask} // 传递清除所有任务函数
-        messages_info={messages_info} // 传递消息信息
+        MemberEnterProps={{
+          messages_info, // 传递消息信息
+          messageEffect
+        }}
         barrage_ount={barrage_ount} // 传递弹幕数量
         online_count={online_count} // 传递在线用户数量
         LoginComProms={{

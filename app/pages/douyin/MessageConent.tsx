@@ -1,12 +1,12 @@
 import { Empty, Flex, Skeleton } from 'antd'
 import { useEffect, useState } from 'react'
-import type {
-  DanmuMessage,
-  TaskListType
-} from '~/components/BaseWebsocketAdmin/types'
+import type { TaskListType } from '~/components/BaseWebsocketAdmin/types'
 import useAutoScrollToBottom from '~/hook/useAutoScrollToBottom'
 import { ChatItem } from '~/components/BaseWebsocketAdmin/CardLiveMoom'
-
+import { tsListen } from '~/utils/listen'
+import type { DouyinMessageType } from '~/db/douyin/message'
+import type { DouyinWebSocketDanmaDb } from '~/db/douyin'
+import { getAllData, insertData } from '~/db/utils'
 /**
  * 弹幕组件
  * @param param0
@@ -23,25 +23,48 @@ const MessageConent = ({
   position?: 'x' | 'y'
   isEmpty?: boolean
 }) => {
-  const [messages, setMessages] = useState<DanmuMessage[]>([])
+  const [messages, setMessages] = useState<DouyinWebSocketDanmaDb[]>([])
   const containerRef = useAutoScrollToBottom<HTMLDivElement>(position)
 
-  // useEffect(() => {
-  //   const timer = setInterval(() => {
-  //     setMessages(prevMessages => [
-  //       ...prevMessages,
-  //       {
-  //         message: '新消息',
-  //         message_id: Date.now().toString(),
-  //         user_name: '用户',
-  //         user_url: '',
-  //         user_id: '用户ID'
-  //       }
-  //     ])
-  //   }, 1000)
+  const get_tasks_danmu = async () => {
+    const res = await getAllData<DouyinWebSocketDanmaDb[]>(
+      'tasks_danmu',
+      'douyin'
+    )
+    setMessages(res.slice(-100))
+  }
 
-  //   return () => clearInterval(timer)
-  // }, [])
+  useEffect(() => {
+    get_tasks_danmu()
+    tsListen<DouyinMessageType['DouyinWebcastChatMessage']['payload']>(
+      'DouyinWebcastChatMessage',
+      async ({ payload }) => {
+        if (!payload) return
+        const messageval: DouyinWebSocketDanmaDb = {
+          task_id: data.task_id,
+          ...payload,
+          user_url: `https://www.douyin.com/user/${payload.user_id}`,
+          timestamp: Date.now()
+        }
+
+        await insertData<DouyinWebSocketDanmaDb>({
+          table: 'tasks_danmu',
+          data: messageval,
+          dbName: 'douyin' // 请替换为实际的数据库名称
+        })
+
+        setMessages(state => {
+          const uniqueMessages = new Map(
+            state.map(msg => [msg.message_id, msg])
+          )
+          uniqueMessages.set(messageval.message_id, messageval)
+          return Array.from(uniqueMessages.values())
+            .sort((a, b) => a.timestamp - b.timestamp) // 根据timestamp排序
+            .slice(-100)
+        })
+      }
+    )
+  }, [data.task_id])
 
   const FlexProps =
     position === 'x'

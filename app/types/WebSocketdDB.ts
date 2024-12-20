@@ -2,7 +2,7 @@ export interface WebSocketTaskType {
   /**
    * WebSocket 连接的任务ID
    */
-  task_id: string
+  readonly task_id: string
   /**
    * 应用名称
    */
@@ -10,11 +10,11 @@ export interface WebSocketTaskType {
   /**
    * 应用类型
    */
-  app_type: string
+  readonly app_type: string
   /**
    * 连接的URL
    */
-  live_url: string
+  readonly live_url: string
   /**
    *  connecting: 连接中
    *  disconnected: 断开
@@ -24,9 +24,9 @@ export interface WebSocketTaskType {
   /**
    * 直播间描述
    */
-  description?: string
+  readonly description?: string
   /**
    * 创建任务时间
    */
-  timestamp: number
+  readonly timestamp: number
 }

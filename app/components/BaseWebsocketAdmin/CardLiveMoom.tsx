@@ -8,7 +8,6 @@ import {
   TeamOutlined,
   BoldOutlined,
   ReloadOutlined,
-  CommentOutlined,
   CloseOutlined
 } from '@ant-design/icons'
 import {
@@ -27,7 +26,11 @@ import { motion } from 'framer-motion'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import cn from 'classnames'
 import UpdateLive from './UpdateLive'
-import type { BaseWebsocketAdminProps, TaskListType } from './types'
+import type {
+  BaseWebsocketAdminProps,
+  DanmuMessage,
+  TaskListType
+} from './types'
 
 export const Setting = () => {
   return (
@@ -75,7 +78,7 @@ export const ChatItem = ({
   className,
   isAdmin
 }: {
-  messages_info?: BaseWebsocketAdminProps['messages_info']
+  messages_info?: DanmuMessage
   className?: string
   width?: string
   isAdmin?: boolean
@@ -83,24 +86,7 @@ export const ChatItem = ({
   // const user_url = `https://www.douyin.com/user/${messages_info?.user_id}?from_tab_name=live`
 
   return (
-    <motion.div
-      style={{ width }}
-      {...(isAdmin
-        ? {}
-        : {
-            initial: {
-              opacity: 0,
-              y: 100
-            },
-            animate: {
-              opacity: 1,
-              y: 0
-            },
-            transition: {
-              duration: 1
-            }
-          })}
-    >
+    <motion.div style={{ width }}>
       <Flex gap="small" className={cn('mb-[1rem] ', className)} wrap="wrap">
         <Flex gap="small" align="center">
           <a href={messages_info?.user_url} target="_blank" rel="noreferrer">
@@ -147,7 +133,7 @@ export const getActions = ({
   updateWebSocketTaskItem
 }: Omit<
   CardLiveMoomProps,
-  'MessageIconsArrCom' | 'messages_info' | 'LoginComProms'
+  'MessageIconsArrCom' | 'MemberEnterProps' | 'LoginComProms'
 >): React.ReactNode[] => {
   return [
     <UpdateLive
@@ -307,7 +293,7 @@ export interface CardLiveMoomProps {
   readonly AddFormItems?: BaseWebsocketAdminProps['AddFormItems']
   readonly online_count: BaseWebsocketAdminProps['online_count']
   readonly barrage_ount: BaseWebsocketAdminProps['barrage_ount']
-  readonly messages_info: BaseWebsocketAdminProps['messages_info']
+  readonly MemberEnterProps: BaseWebsocketAdminProps['MemberEnterProps']
   readonly updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   readonly updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
 }
@@ -421,7 +407,7 @@ export const DanmuCount = ({
 }) => {
   return (
     <Flex gap="small" align="center" justify="start">
-      <Tooltip title="弹幕">
+      <Tooltip title="已记录弹幕">
         <Space>
           <BoldOutlined />
           {barrage_ount}
@@ -465,17 +451,22 @@ export const CardLiveMoomLoading = ({ children }: { children?: ReactNode }) => {
 }
 
 const MemberEnter = ({
+  messageEffect,
   messages_info,
+  data,
   className
-}: {
-  messages_info?: any
+}: BaseWebsocketAdminProps['MemberEnterProps'] & {
+  data: TaskListType
   className: string
 }) => {
+  useEffect(() => {
+    messageEffect?.(data)
+  }, [])
   return (
     <Flex justify="start" align="center" className={className}>
       {messages_info && (
         <ChatItem
-          key={messages_info.message_id}
+          key={messages_info?.message_id}
           isAdmin={true}
           width="100%"
           className="w-full"
@@ -610,7 +601,7 @@ export const MessagetypeRender = ({
 
 const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
   data,
-  messages_info,
+  MemberEnterProps,
   barrage_ount,
   online_count,
   AddFormItems,
@@ -686,7 +677,8 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
           <div className="relative w-[100%]">
             <MessagetypeRender MessageConent={MessageConent} data={data} />
             <MemberEnter
-              messages_info={messages_info}
+              {...MemberEnterProps}
+              data={data}
               className="absolute w-full  bottom-[-5.1rem] left-0 right-0 px-[1rem]"
             />
             <div className="absolute bottom-0 left-0 right-0 h-[2rem] bg-gradient-to-t from-white to-transparent"></div>

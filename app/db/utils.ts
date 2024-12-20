@@ -5,6 +5,10 @@ export const getDbData = async ({ dbName }: { dbName: DbNameTypes }) => {
   return await Database.load(`sqlite:${dbName}.db`)
 }
 
+/**
+ * 添加
+ * @param param0
+ */
 export const insertData = async <T extends object>({
   table,
   data,
@@ -23,11 +27,15 @@ export const insertData = async <T extends object>({
   const values = Object.values(data)
 
   await db.execute(
-    `INSERT INTO ${table} (${keys}) VALUES (${placeholders})`,
+    `INSERT OR IGNORE INTO ${table} (${keys}) VALUES (${placeholders})`,
     values
   )
 }
 
+/**
+ * 删除
+ * @param param0
+ */
 export const deleteData = async ({
   table,
   params,
@@ -63,6 +71,10 @@ export const deleteData = async ({
   }
 }
 
+/**
+ * 更新
+ * @param param0
+ */
 export const updateData = async <T extends object>({
   table,
   data,
@@ -84,4 +96,19 @@ export const updateData = async <T extends object>({
   const values = [...Object.values(data), db_id]
 
   await db.execute(`UPDATE ${table} SET ${setClause} WHERE ${qkey} = ?`, values)
+}
+
+/**
+ * 查询表的所有数据
+ * @param table 表名
+ * @param dbName 数据库名称
+ * @returns 返回表中的所有数据
+ */
+export const getAllData = async <T>(
+  table: DbTableTypes[DbNameTypes]['tables'][number],
+  dbName: DbNameTypes
+): Promise<T> => {
+  const db = await getDbData({ dbName })
+  const rows = await db.select(`SELECT * FROM ${table}`)
+  return rows as T
 }

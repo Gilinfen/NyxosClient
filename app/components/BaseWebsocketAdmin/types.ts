@@ -12,6 +12,10 @@ export type TaskItemStatus = 'start' | 'stop' | 'reload'
  */
 export interface DanmuMessage {
   /**
+   * 任务 ID
+   */
+  readonly task_id: string
+  /**
    * 用户的唯一标识符
    */
   readonly user_id: string
@@ -27,6 +31,10 @@ export interface DanmuMessage {
    * 用户发送的消息内容
    */
   readonly message: string
+  /**
+   * 发送时间
+   */
+  readonly timestamp: number
   /**
    * 用户 主页
    */
@@ -57,14 +65,22 @@ export interface BaseWebsocketAdminProps {
   readonly online_count: number
 
   /**
-   * 用户连接后的信息
-   */
-  readonly messages_info?: DanmuMessage
-
-  /**
    * 添加自定义字段
    */
   readonly AddFormItems?: UpdateLiveProps['FormItems']
+  /**
+   * 用户连接组件
+   */
+  readonly MemberEnterProps: {
+    /**
+     * 用户连接后的信息
+     */
+    readonly messages_info?: DanmuMessage
+    /**
+     *
+     */
+    readonly messageEffect?: (data: TaskListType) => void
+  }
   /**
    * 登陆组件参数
    */

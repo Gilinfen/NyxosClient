@@ -12,7 +12,8 @@
   "dependencies": {
     "@react-router/node": "^7.0.2",
     "@react-router/serve": "^7.0.2",
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "~2",
+    "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-sql": "~2",
     "antd": "^5.22.5",

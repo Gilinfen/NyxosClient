@@ -29,6 +29,7 @@ pub fn create_douyin_tables() -> Vec<Migration> {
                     user_name TEXT NOT NULL,
                     message TEXT NOT NULL,
                     user_url TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
                     task_id TEXT NOT NULL, -- 关联到 tasks 表
                     PRIMARY KEY (message_id),
                     FOREIGN KEY (task_id) REFERENCES tasks(task_id) -- 外键关联到 tasks 表
@@ -42,6 +43,7 @@ pub fn create_douyin_tables() -> Vec<Migration> {
                     user_id TEXT NOT NULL,
                     user_name TEXT NOT NULL,
                     user_url TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
                     task_id TEXT NOT NULL, -- 关联到 tasks 表
                     PRIMARY KEY (user_id),
                     FOREIGN KEY (task_id) REFERENCES tasks(task_id) -- 外键关联到 tasks 表

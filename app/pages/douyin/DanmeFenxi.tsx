@@ -12,7 +12,10 @@ import {
 import type { ColumnType } from 'antd/es/table'
 import { useState } from 'react'
 import type { TaskListType } from '~/components/BaseWebsocketAdmin/types'
-import { ScanOutlineComponent } from '~/components/BaseWebsocketAdmin/CardLiveMoom'
+import {
+  CardTitle,
+  ScanOutlineComponent
+} from '~/components/BaseWebsocketAdmin/CardLiveMoom'
 import {
   AreaChartOutlined,
   CopyOutlined,
@@ -21,15 +24,17 @@ import {
   ReloadOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-
-type WebSocketDanmakuMessage = any
+import type { DouyinWebSocketDanmaDb } from '~/db/douyin/index'
+import { getAllData } from '~/db/utils'
+import * as XLSX from 'xlsx'
+import { saveExcelFile } from '~/utils'
 
 const QueryDanmuAll = async ({
   data
 }: {
   data: TaskListType
-}): Promise<WebSocketDanmakuMessage[]> => {
-  return []
+}): Promise<DouyinWebSocketDanmaDb[]> => {
+  return await getAllData<DouyinWebSocketDanmaDb[]>('tasks_danmu', 'douyin')
 }
 
 export type DataListType = Awaited<ReturnType<typeof QueryDanmuAll>>
@@ -55,14 +60,18 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     {
       title: '直播间',
       ellipsis: true,
-      dataIndex: 'app_type',
+      dataIndex: 'task_id',
       render: () => {
-        return <>{/* <CardTitle data={data} /> */}</>
+        return (
+          <>
+            <CardTitle data={data} />
+          </>
+        )
       }
     },
     {
       title: '用户',
-      dataIndex: 'username',
+      dataIndex: 'user_name',
       render: (text, record) => {
         const url = `https://www.douyin.com/user/${record.user_id}?from_tab_name=live`
         return (
@@ -94,7 +103,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     {
       title: '弹幕',
       ellipsis: true,
-      dataIndex: 'content'
+      dataIndex: 'message'
     },
     {
       title: '发送时间',
@@ -103,6 +112,21 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
       dataIndex: 'timestamp',
       render: (text: string) => {
         return <span>{dayjs(text).format('YYYY-MM-DD HH:mm:ss')}</span>
+      }
+    },
+    {
+      title: '操作',
+      width: 150,
+      align: 'center',
+      render: (_, record) => {
+        return (
+          <Flex>
+            <Button type="link">管理</Button>
+            <Button danger type="link">
+              删除
+            </Button>
+          </Flex>
+        )
       }
     }
   ]
@@ -123,10 +147,10 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
         return item.task_id?.toLowerCase().includes(value.toLowerCase())
       }
       if (type === 'user') {
-        return item.username?.toLowerCase().includes(value.toLowerCase())
+        return item.user_name?.toLowerCase().includes(value.toLowerCase())
       }
       if (type === 'message') {
-        return item.content?.toLowerCase().includes(value.toLowerCase())
+        return item.message?.toLowerCase().includes(value.toLowerCase())
       }
       return false
     })
@@ -143,40 +167,44 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     }
   }
 
-  const exportToExcel = () => {
-    // if (!dataList.length) {
-    //   messageApi.warning('暂无数据')
-    //   return
-    // }
-    // // 创建工作表
-    // const ws = XLSX.utils.json_to_sheet(
-    //   dataList.map(item => ({
-    //     用户主页: `https://www.douyin.com/user/${item.user_id}?from_tab_name=live`,
-    //     用户名: item.username,
-    //     弹幕: item.content,
-    //     发送时间: dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss')
-    //   }))
-    // )
-    // // 设置列宽
-    // ws['!cols'] = [
-    //   { wch: 30 }, // 第一列宽度为20字符
-    //   { wch: 30 }, // 第二列宽度为10字符
-    //   { wch: 30 }, // 第三列宽度为30字符
-    //   { wch: 30 } // 第四列宽度为30字符
-    // ]
-    // // 创建工作簿
-    // const wb = XLSX.utils.book_new()
-    // XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-    // // 导出为 Excel 文件
-    // const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-    // const blob = new Blob([excelBuffer], { type: 'application/octet-stream' })
-    // saveAs(blob, `${data.taskName}.xlsx`)
+  const exportToExcel = async () => {
+    if (!dataList.length) {
+      message.warning('暂无数据')
+      return
+    }
+
+    // 创建工作表
+    const ws = XLSX.utils.json_to_sheet(
+      dataList.map(item => ({
+        用户主页: `https://www.douyin.com/user/${item.user_id}?from_tab_name=live`,
+        用户名: item.user_name,
+        弹幕: item.message,
+        发送时间: dayjs(item.timestamp).format('YYYY-MM-DD HH:mm:ss')
+      }))
+    )
+
+    // 设置列宽
+    ws['!cols'] = [
+      { wch: 30 }, // 第一列宽度为30字符
+      { wch: 30 }, // 第二列宽度为30字符
+      { wch: 30 }, // 第三列宽度为30字符
+      { wch: 30 } // 第四列宽度为30字符
+    ]
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+
+    // 导出为 Excel 文件的二进制数据
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+
+    await saveExcelFile(excelBuffer, `${data.task_name}_弹幕.xlsx`)
   }
 
   return (
     <>
       {contextHolder}
-      <Tooltip title="分析">
+      <Tooltip title="分析弹幕">
         <AreaChartOutlined onClick={onOpen} />
       </Tooltip>
       <Modal
@@ -228,7 +256,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
           <Table
             loading={loading}
             rowKey="message_id"
-            size="large"
+            size="small"
             dataSource={dataList}
             columns={columns}
           />

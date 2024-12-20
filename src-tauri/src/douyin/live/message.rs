@@ -1,5 +1,5 @@
 use prost::Message;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 use crate::proto::douyin_protos;
 
@@ -7,6 +7,34 @@ use crate::proto::douyin_protos;
 pub fn un_pack_webcast_chat_message(app: &AppHandle, payload: &[u8]) {
     let chat = douyin_protos::ChatMessage::decode(payload);
     // println!("chat :{:?}", chat);
+    if let Ok(chat_message) = chat {
+        let msg_id = chat_message.common.as_ref().map(|c| c.msg_id).unwrap_or(0);
+        let content = chat_message.content.clone();
+        let sec_uid = chat_message
+            .user
+            .as_ref()
+            .map(|u| u.sec_uid.clone())
+            .unwrap_or_default();
+        let nick_name = chat_message
+            .user
+            .as_ref()
+            .map(|u| u.nick_name.clone())
+            .unwrap_or_default();
+
+        let json_message = serde_json::json!({
+            "message_id": msg_id,
+            "message": content,
+            "user_id": sec_uid,
+            "user_name": nick_name,
+        });
+
+        // 发送到前端
+        if let Err(e) = app.emit("DouyinWebcastChatMessage", json_message) {
+            eprintln!("发送聊天消息到前端失败: {}", e);
+        }
+    } else {
+        println!("解码聊天消息失败");
+    }
     // 处理逻辑...
 }
 
@@ -27,6 +55,37 @@ pub fn un_pack_webcast_like_message(app: &AppHandle, payload: &[u8]) {
 pub fn un_pack_webcast_member_message(app: &AppHandle, payload: &[u8]) {
     let member = douyin_protos::MemberMessage::decode(payload);
     // println!("member :{:?}", member);
+    if let Ok(member_message) = member {
+        let msg_id = member_message
+            .common
+            .as_ref()
+            .map(|c| c.msg_id)
+            .unwrap_or(0);
+        let sec_uid = member_message
+            .user
+            .as_ref()
+            .map(|u| u.sec_uid.clone())
+            .unwrap_or_default();
+        let nick_name = member_message
+            .user
+            .as_ref()
+            .map(|u| u.nick_name.clone())
+            .unwrap_or_default();
+        let member_count = member_message.member_count.clone();
+        let json_message = serde_json::json!({
+            "message_id":msg_id,
+            "member_count": member_count,
+            "user_url": sec_uid,
+            "user_name": nick_name,
+        });
+
+        // 发送到前端
+        if let Err(e) = app.emit("DouyinWebcastMemberMessage", json_message) {
+            eprintln!("成员进入消息到前端失败: {}", e);
+        }
+    } else {
+        println!("解码成员进入消息失败");
+    }
 }
 
 // 礼物消息

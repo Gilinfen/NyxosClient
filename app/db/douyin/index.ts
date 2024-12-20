@@ -1,6 +1,6 @@
 import type { DanmuMessage } from '~/components/BaseWebsocketAdmin/types'
 import type { WebSocketTaskType } from '~/types/WebSocketdDB'
-import type { MessageType } from './message'
+import type { DouyinMessageType } from './message'
 
 /**
  * 抖音 websocket 任务表
@@ -9,7 +9,7 @@ export interface DouyinWebSocketTaskDb extends WebSocketTaskType {
   /**
    * 消息类型
    */
-  message_type: keyof MessageType
+  message_type: keyof DouyinMessageType
   /**
    * 弹幕关键字
    */
@@ -26,15 +26,23 @@ export interface DouyinWebSocketDanmaDb extends DanmuMessage {}
  */
 export interface DouyinWebSocketUserDb {
   /**
+   * 任务 ID
+   */
+  readonly task_id: string
+  /**
    * 用户的唯一标识符
    */
-  user_id: string
+  readonly user_id: string
   /**
    * 用户的名称
    */
-  user_name: string
+  readonly user_name: string
   /**
    * 用户 主页
    */
-  user_url: string
+  readonly user_url: string
+  /**
+   * 进入时间
+   */
+  readonly timestamp: number
 }

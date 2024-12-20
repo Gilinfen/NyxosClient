@@ -1,5 +1,5 @@
 import { Button, Modal, Input, Form, Flex, Space, Alert, message } from 'antd'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, FormOutlined, PlusOutlined } from '@ant-design/icons'
 import React, { useEffect, useState } from 'react'
 import type { ValidatorRule } from 'rc-field-form/lib/interface'
 
@@ -212,12 +212,12 @@ export default function UpdateLive({
           </Form.Item>
           <Form.Item>
             <Button
-              icon={<PlusOutlined />}
+              icon={type === 'add' ? <PlusOutlined /> : <FormOutlined />}
               type="primary"
               block
               htmlType="submit"
             >
-              添加
+              {type === 'add' ? '添加' : '修改'}
             </Button>
           </Form.Item>
         </Form>

@@ -1,3 +1,37 @@
+import { save } from '@tauri-apps/plugin-dialog'
+import { writeFile } from '@tauri-apps/plugin-fs'
+import { message } from 'antd'
+
+/**
+ * 保存 Excel 文件到本地
+ * @param {Uint8Array} excelBuffer - Excel 文件的二进制数据
+ * @param {string} fileName - 默认的文件名，例如 '导出文件.xlsx'
+ */
+export const saveExcelFile = async (
+  excelBuffer: Uint8Array,
+  fileName: string = '导出文件.xlsx'
+) => {
+  try {
+    // 打开保存文件对话框
+    const filePath = await save({
+      defaultPath: fileName,
+      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }]
+    })
+
+    if (!filePath) {
+      message.warning('未选择保存路径')
+      return
+    }
+
+    // 使用 Tauri 文件系统模块保存文件
+    await writeFile(filePath, new Uint8Array(excelBuffer)) // 转为 Uint8Array 格式
+    message.success(`文件已成功保存到: ${filePath}`)
+  } catch (error) {
+    console.error('保存文件失败:', error)
+    message.error('保存文件失败，请重试')
+  }
+}
+
 /**
  * 创建一个延迟函数
  * @param ms 延迟的毫秒数

@@ -17,7 +17,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
   loading,
   taskList,
   barrage_ount,
-  messages_info,
+  MemberEnterProps,
   MessageConent,
   MessageIconsArrCom,
   online_count,
@@ -178,7 +178,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
               <CardLiveMoom
                 key={item.task_id}
                 MessageConent={MessageConent}
-                messages_info={messages_info}
+                MemberEnterProps={MemberEnterProps}
                 AddFormItems={AddFormItems}
                 MessageIconsArrCom={MessageIconsArrCom}
                 barrage_ount={barrage_ount}
