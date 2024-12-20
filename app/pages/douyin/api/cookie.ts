@@ -1,9 +1,11 @@
 import { loadScript } from '~/utils'
 import { makeRequest } from '~/utils/request'
 import __ac_signature_url from '~/assets/douyin/__ac_signature?url'
+import { getUserAgent } from '~/common/api'
 
 export class DouyinCookieApi {
   public static async get__ac_nonce(): Promise<string> {
+    const userange = await getUserAgent()
     const val = await makeRequest<any[]>({
       url: 'https://www.douyin.com/',
       headers: {
@@ -24,8 +26,7 @@ export class DouyinCookieApi {
         'sec-fetch-user': '?1',
         'sec-purpose': 'prefetch;prerender',
         'upgrade-insecure-requests': '1',
-        'user-agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        'user-agent': userange
       }
     })
 
@@ -47,6 +48,7 @@ export class DouyinCookieApi {
   public static async getTtwid(): Promise<string> {
     const __ac_nonce = await this.get__ac_nonce()
     const __ac_signature = await this.get__ac_signature(__ac_nonce)
+    const userange = await getUserAgent()
     const __ac_referer = 'https://www.douyin.com/'
     const ttwidget = await makeRequest<any[]>({
       url: 'https://www.douyin.com/',
@@ -67,8 +69,7 @@ export class DouyinCookieApi {
         'sec-fetch-mode': 'navigate',
         'sec-fetch-site': 'same-origin',
         'upgrade-insecure-requests': '1',
-        'user-agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        'user-agent': userange
       }
     })
 

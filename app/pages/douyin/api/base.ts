@@ -4,6 +4,7 @@ import { DouyinCookieApi } from './cookie'
 import { loadScript } from '~/utils'
 import webmssdk from '~/assets/douyin/webmssdk?url'
 import A_Bogus_16X from '~/assets/douyin/A_Bogus_16X?url'
+import { getUserAgent } from '~/common/api'
 
 interface WsParams {
   baseUrl: string
@@ -57,6 +58,7 @@ export class DouyinWebSocketCommands {
     try {
       const __ac_nonce = await DouyinCookieApi.get__ac_nonce()
       const __ac_signature = await DouyinCookieApi.get__ac_signature(__ac_nonce)
+      const userange = await getUserAgent()
 
       // 发送HTTP请求获取直播间页面内容
       const response = await makeRequest<string>({
@@ -78,8 +80,7 @@ export class DouyinWebSocketCommands {
           'sec-fetch-mode': 'navigate',
           'sec-fetch-site': 'same-origin',
           'upgrade-insecure-requests': '1',
-          'user-agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+          'user-agent': userange
         }
       })
 
@@ -114,7 +115,9 @@ export default class DouyinBaseInject {
 
     return A_Bogus_16X_val
   }
-
+  public static async getmsToken(): Promise<string> {
+    return 'KT6fLqz9WW6oHu9NBnTntpY6XUpQ3flQLpk3fb_lCOgNg9s4wSDJQJM30BHU2pKOwJTCx6GFnaAPGZJCfP5MB4gAfTQKIjIVjb4I6WIDP5fPycmcMG3R-fEkoOHYhd2pzMl0r8a0LBz8duYWbIZoeyPd3s6HMxOd1dLNyPYNxQ-I1p0N5uQAUeY='
+  }
   public static async getWebsocketUrl(
     liveUrl: string
   ): Promise<WebSocketParoams | undefined> {
@@ -241,6 +244,7 @@ export default class DouyinBaseInject {
       sign = window.byted_acrawler.frontierSign({
         'X-MS-STUB': md5Hash
       })['X-Bogus']
+
       // @ts-ignore
       window.byted_acrawler = null
     })

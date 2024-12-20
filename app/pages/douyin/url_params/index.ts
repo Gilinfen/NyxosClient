@@ -120,14 +120,18 @@ export interface DouyinAPIEndpointsInterface {
         response: {
           data: {
             /**
-             * 1 查询确认
-             * 2 扫码成功
-             * 5 已过期
+             * - 1 查询确认
+             * - 2 扫码成功
+             * - 5 已过期
              */
             status: '1' | '2' | '5'
           }
           description: string
-          error_code: number
+          /**
+           * - 0 正常查询
+           * - 2046 身份验证（登陆环境有问题）
+           */
+          error_code: 0 | 2046
           message: 'success'
         }
       }

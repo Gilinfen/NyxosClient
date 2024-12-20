@@ -8,7 +8,8 @@ import {
   TeamOutlined,
   BoldOutlined,
   ReloadOutlined,
-  CommentOutlined
+  CommentOutlined,
+  CloseOutlined
 } from '@ant-design/icons'
 import {
   Button,
@@ -295,20 +296,20 @@ export const LiveLoading = ({
 }
 
 export interface CardLiveMoomProps {
-  data: TaskListType
-  app_type: BaseWebsocketAdminProps['app_type']
-  LoginComProms: BaseWebsocketAdminProps['LoginComProms']
+  readonly data: TaskListType
+  readonly app_type: BaseWebsocketAdminProps['app_type']
+  readonly LoginComProms: BaseWebsocketAdminProps['LoginComProms']
   /**
    * message 自定义内容
    */
-  MessageConent: BaseWebsocketAdminProps['MessageConent']
-  MessageIconsArrCom: BaseWebsocketAdminProps['MessageIconsArrCom']
-  AddFormItems?: BaseWebsocketAdminProps['AddFormItems']
-  online_count: BaseWebsocketAdminProps['online_count']
-  barrage_ount: BaseWebsocketAdminProps['barrage_ount']
-  messages_info: BaseWebsocketAdminProps['messages_info']
-  updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
-  updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
+  readonly MessageConent: BaseWebsocketAdminProps['MessageConent']
+  readonly MessageIconsArrCom: BaseWebsocketAdminProps['MessageIconsArrCom']
+  readonly AddFormItems?: BaseWebsocketAdminProps['AddFormItems']
+  readonly online_count: BaseWebsocketAdminProps['online_count']
+  readonly barrage_ount: BaseWebsocketAdminProps['barrage_ount']
+  readonly messages_info: BaseWebsocketAdminProps['messages_info']
+  readonly updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
+  readonly updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
 }
 
 export const CardTitle = ({ data }: { data: TaskListType }) => {
@@ -503,7 +504,13 @@ export const CardLiveMoomChat = ({
           variant="filled"
         />
       ) : (
-        <Button onClick={onClick} type="primary" block icon={<ScanOutlined />}>
+        <Button
+          disabled
+          onClick={onClick}
+          type="primary"
+          block
+          icon={<ScanOutlined />}
+        >
           扫码登陆开始聊天
         </Button>
       )}
@@ -572,6 +579,9 @@ const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
     >
       <LoginStatusCom />
       {props?.loginUrl ? <QRCode value={props.loginUrl} /> : <></>}
+      <Flex className=" absolute bottom-[-25%]">
+        <Button type="text" onClick={props.onClose} icon={<CloseOutlined />} />
+      </Flex>
     </Flex>
   )
 }
@@ -618,6 +628,17 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
     await LoginComProms?.onExpired?.(LoginComProms?.loginUrl)
   }
 
+  const onClose = () => {
+    LoginComProms.onClose?.()
+    setloading(false)
+  }
+
+  useEffect(() => {
+    if (LoginComProms.loginStatus === 'loggedIn') {
+      setloading(false)
+    }
+  }, [LoginComProms.loginStatus])
+
   return (
     <Flex justify="center" align="center" className="relative">
       {(data.task_status === 'reconnecting' || loading) && (
@@ -627,6 +648,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
               <LoginCom
                 loginStatus={LoginComProms.loginStatus}
                 loginUrl={LoginComProms.loginUrl}
+                onClose={onClose}
                 onExpired={LoginComProms.onExpired}
               />
             ) : (

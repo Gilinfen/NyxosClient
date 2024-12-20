@@ -31,6 +31,7 @@ import type { DouyinAPIEndpointsInterface } from './url_params/index'
 import { makeRequest, objectToParams } from '~/utils/request'
 import { DouyinCookieApi } from './api/cookie'
 import DouyinBaseInject from './api/base'
+import { getUserAgent } from '~/common/api'
 
 // 定义抖音页面组件
 export default function DouyinPage() {
@@ -77,11 +78,11 @@ export default function DouyinPage() {
     }
     setmessageTypeState(messageArray) //
 
-    // DouyinBaseInject.getWebsocketUrl(
-    //   'https://live.douyin.com/156392868120'
-    // ).then(res => {
-    //   console.log(res)
-    // })
+    DouyinBaseInject.getWebsocketUrl(
+      'https://live.douyin.com/801462738092'
+    ).then(res => {
+      console.log(res)
+    })
   }, [])
 
   // 从数据库获取任务
@@ -302,6 +303,7 @@ export default function DouyinPage() {
           DouyinAPIEndpoints.SSO_DOMAIN.ROUTERS.SSO_LOGIN_GET_QR
 
         const ttwid = await DouyinCookieApi.getTtwid()
+        const msToken = await DouyinBaseInject.getmsToken()
 
         const params_obj: DouyinAPIEndpointsInterface['SSO_DOMAIN']['ROUTERS']['SSO_LOGIN_GET_QR']['params'] =
           {
@@ -320,18 +322,16 @@ export default function DouyinPage() {
             request_host: 'https://www.douyin.com',
             biz_trace_id: '5d6d30bd',
             device_platform: 'web_app',
-            msToken:
-              'KT6fLqz9WW6oHu9NBnTntpY6XUpQ3flQLpk3fb_lCOgNg9s4wSDJQJM30BHU2pKOwJTCx6GFnaAPGZJCfP5MB4gAfTQKIjIVjb4I6WIDP5fPycmcMG3R-fEkoOHYhd2pzMl0r8a0LBz8duYWbIZoeyPd3s6HMxOd1dLNyPYNxQ-I1p0N5uQAUeY=',
+            msToken,
             a_bogus: ''
           }
         // @ts-ignore
         delete params_obj.a_bogus
-        const ua =
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+        const userange = await getUserAgent()
 
         params_obj.a_bogus = await DouyinBaseInject.getABougus16X(
           objectToParams(params_obj),
-          ua
+          userange
         )
 
         const params = objectToParams(params_obj)
@@ -363,7 +363,11 @@ export default function DouyinPage() {
         const check_qrconnect_url = `${check_qrconnect_url_}?${objectToParams(
           check_qrconnect_params
         )}`
+
+        // 轮询
         poll(async () => {
+          // 取消
+          if (loginStatus === 'cancel') return true
           const res = await makeRequest<
             DouyinAPIEndpointsInterface['SSO_DOMAIN']['ROUTERS']['SSO_LOGIN_CHECK_QR']['response']
           >({
@@ -372,6 +376,12 @@ export default function DouyinPage() {
               cookie: `ttwid=${ttwid}`
             }
           })
+          const error_code = res[0].error_code
+          // 身份验证
+          if (error_code === 2046) {
+            return true
+          }
+          // 正常
           const log_status = res[0].data.status
           switch (log_status) {
             case '1':
@@ -395,6 +405,11 @@ export default function DouyinPage() {
       }
     }
 
+  const qtloginClose = () => {
+    setloginStatus('cancel')
+    setLoginUrl(void 0)
+  }
+
   return (
     <>
       <BaseWebsocketAdmin
@@ -415,7 +430,6 @@ export default function DouyinPage() {
             rules={[{ required: true, message: '请选择消息类型' }]} // 表单验证规则
           >
             <Select placeholder="请选择消息类型" options={messageTypeState} />{' '}
-            // 选择消息类型
           </Form.Item>,
           <Form.Item
             key={'noStyle_key'}
@@ -438,7 +452,7 @@ export default function DouyinPage() {
                       key={'keywords'}
                       name="keywords"
                     >
-                      <KeywordsCom /> // 关键词组件
+                      <KeywordsCom />
                     </Form.Item>
                   )
                 default:
@@ -458,7 +472,8 @@ export default function DouyinPage() {
         LoginComProms={{
           loginStatus, // 传递二维码过期状态
           loginUrl, // 传递登录 URL
-          onExpired // 传递二维码过期处理函数
+          onExpired, // 传递二维码过期处理函数
+          onClose: qtloginClose
         }}
       />
     </>
