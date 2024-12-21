@@ -15,6 +15,7 @@ export interface LiveRoomInfo {
   roomId: string
   roomTitle: string
   roomUserCount: string
+  sec_uid: string
   uniqueId: string
   avatar: string
 }
@@ -28,14 +29,17 @@ export class DouyinWebSocketCommands {
    * @param html 房间页面HTML
    * @returns Promise<LiveRoomInfo>
    */
-  private static getRoomInfoApi(html: string): Omit<LiveRoomInfo, 'cookie'> {
+  private static getRoomInfoApi(html: string): LiveRoomInfo {
     const matchRes_unique_id = html.match(/user_unique_id\\":\\"(\d+)\\"/)
     const matchRes_room_id = html.match(/roomId\\":\\"(\d+)\\"/)
+    const matchRes_sec_uid = html.match(/sec_uid\\":\\"(.*?)\\"/)
     if (!matchRes_unique_id) throw new Error('获取user_unique_id失败')
     if (!matchRes_room_id) throw new Error('获取room_id失败')
+    if (!matchRes_sec_uid) throw new Error('获取sec_uid失败')
 
     const uniqueId = matchRes_unique_id[1]
     const roomId = matchRes_room_id[1]
+    const sec_uid = matchRes_sec_uid[1]
     const roomTitle = ''
     const roomUserCount = ''
     const avatar = ''
@@ -45,6 +49,7 @@ export class DouyinWebSocketCommands {
       roomTitle,
       roomUserCount,
       uniqueId,
+      sec_uid,
       avatar
     }
   }

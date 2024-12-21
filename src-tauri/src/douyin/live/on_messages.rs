@@ -54,6 +54,7 @@ pub async fn parse_on_message_response(
     ws: &mut WebSocketStream<impl tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin>,
     data: &[u8],
     live_room_id: &str, // 房间 id
+    task_id: &str,      // 任务 id
 ) {
     let decoded_data = PushFrame::decode(data).expect("PushFrame 解码错误");
     let payload = decompress(&decoded_data.payload).expect("解压缩错误");
@@ -65,7 +66,7 @@ pub async fn parse_on_message_response(
             .expect("发送 Ack 错误");
     }
 
-    process::process_messages(app, &res_pay.messages_list, live_room_id).await;
+    process::process_messages(app, &res_pay.messages_list, live_room_id, task_id).await;
 }
 
 // // 发送ack包

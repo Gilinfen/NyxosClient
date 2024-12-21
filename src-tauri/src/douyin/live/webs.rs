@@ -12,11 +12,13 @@ pub async fn connect_to_websocket(
     app: AppHandle,
     url: &str,
     live_room_id: &str,               // 房间 id
+    task_id: &str,                    // 任务 id
     headers: HashMap<String, String>, // 将headers作为参数传入
 ) -> Result<(), String> {
     println!("开始连接到 WebSocket：{}", url);
 
     let live_room_id = live_room_id.to_string(); // 将 live_room_id 转换为 String
+    let task_id = task_id.to_string(); // 将 live_room_id 转换为 String
 
     let mut request_builder = Request::builder().uri(url);
 
@@ -42,7 +44,14 @@ pub async fn connect_to_websocket(
                         }
                         Ok(Message::Binary(bin)) => {
                             // println!("接收到二进制消息: {:?}", bin);
-                            parse_on_message_response(&app, &mut stream, &bin, &live_room_id).await;
+                            parse_on_message_response(
+                                &app,
+                                &mut stream,
+                                &bin,
+                                &live_room_id,
+                                &task_id,
+                            )
+                            .await;
                             // 使用 &live_room_id
                             // 在这里处理收到的二进制消息
                         }

@@ -72,6 +72,27 @@ const Reload = ({
   )
 }
 
+export const CardItemLogo = ({
+  messages_info
+}: {
+  messages_info?: DanmuMessage
+}) => {
+  return (
+    <Flex
+      justify="center"
+      align="center"
+      className="relative rounded-[50%] bg-[#f1f3f5] w-[2.5rem] h-[2.5rem] "
+    >
+      <div className="absolute top-0 left-0 w-[2.5rem] h-[2.5rem] rounded-[50%] border-[.2rem] border-[#cdcdcd] flex items-center justify-center" />
+      <ScanOutlineComponent
+        url={messages_info?.user_url}
+        title={messages_info?.user_name}
+        className={'scale-[1.5]'}
+      />
+    </Flex>
+  )
+}
+
 export const ChatItem = ({
   messages_info,
   width,
@@ -99,18 +120,7 @@ export const ChatItem = ({
           align="start"
           className={cn(' w-full')}
         >
-          <Flex
-            justify="center"
-            align="center"
-            className="relative rounded-[50%] bg-[#f1f3f5] w-[2.5rem] h-[2.5rem] "
-          >
-            <div className="absolute top-0 left-0 w-[2.5rem] h-[2.5rem] rounded-[50%] border-[.2rem] border-[#cdcdcd] flex items-center justify-center" />
-            <ScanOutlineComponent
-              url={messages_info?.user_url}
-              title={messages_info?.user_name}
-              className={'scale-[1.5]'}
-            />
-          </Flex>
+          <CardItemLogo messages_info={messages_info} />
           <Flex
             justify="start"
             align="center"
@@ -187,19 +197,24 @@ export const getActions = ({
 const appTypeOptions: {
   [key in TaskListType['app_type']]: ReactNode
 } = {
-  douyin: <TikTokOutlined className="scale-[1.5]" />,
-  tiktok: <TikTokOutlined className="scale-[1.5]" />
+  douyin: <TikTokOutlined className="scale-[1.5]" />
+  // tiktok: <TikTokOutlined className="scale-[1.5]" />
 }
 
-const LiveImage = ({ data }: { data: TaskListType }) => {
+const LiveImage = ({ app_type }: { app_type: TaskListType['app_type'] }) => {
   return (
     <div className=" text-[var(--g-active-color)] flex w-[2rem] h-[2rem] items-center justify-center  rounded-[50%] border-[.2rem] border-[#282a35] ">
-      {appTypeOptions[data.app_type]}
+      {appTypeOptions[app_type]}
     </div>
   )
 }
 
-export const LiveLive = ({ data }: { data: TaskListType }) => {
+export const LiveLive = ({
+  app_type
+}: {
+  data: TaskListType
+  app_type: TaskListType['app_type']
+}) => {
   return (
     <motion.div className="relative  cursor-pointer">
       <div className="w-[2.5rem] h-[2.5rem] rounded-[50%] border-[.2rem] border-[#df4257] flex items-center justify-center">
@@ -208,7 +223,7 @@ export const LiveLive = ({ data }: { data: TaskListType }) => {
           animate={{ scale: [1, 0.9, 1] }}
           transition={{ duration: 1.2, ease: 'linear', repeat: Infinity }}
         >
-          <LiveImage data={data} />
+          <LiveImage app_type={app_type} />
         </motion.div>
       </div>
       <motion.div
@@ -246,9 +261,11 @@ export const LiveLive = ({ data }: { data: TaskListType }) => {
 
 export const LiveLoading = ({
   data,
+  app_type,
   updateWebSocketTaskItem
 }: {
   data: TaskListType
+  app_type: TaskListType['app_type']
   updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
 }) => {
   return (
@@ -271,9 +288,9 @@ export const LiveLoading = ({
       >
         <motion.div>
           {data.task_status === 'connecting' ? (
-            <LiveLive data={data} />
+            <LiveLive app_type={app_type} data={data} />
           ) : (
-            <LiveImage data={data} />
+            <LiveImage app_type={app_type} />
           )}
         </motion.div>
       </Tooltip>
@@ -291,8 +308,7 @@ export interface CardLiveMoomProps {
   readonly MessageConent: BaseWebsocketAdminProps['MessageConent']
   readonly MessageIconsArrCom: BaseWebsocketAdminProps['MessageIconsArrCom']
   readonly AddFormItems?: BaseWebsocketAdminProps['AddFormItems']
-  readonly online_count: BaseWebsocketAdminProps['online_count']
-  readonly barrage_ount: BaseWebsocketAdminProps['barrage_ount']
+  readonly barrageCountProps: BaseWebsocketAdminProps['barrageCountProps']
   readonly MemberEnterProps: BaseWebsocketAdminProps['MemberEnterProps']
   readonly updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   readonly updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
@@ -383,17 +399,13 @@ export const ScanOutlineComponent = ({
   )
 }
 
-export const Livepeople = ({
-  online_count
-}: {
-  online_count: BaseWebsocketAdminProps['online_count']
-}) => {
+export const Livepeople = ({ data }: { data: TaskListType }) => {
   return (
     <Flex gap="small" align="center" justify="start">
       <Tooltip title="在线">
         <Space>
           <TeamOutlined />
-          {online_count}
+          {data.online_count}
           <span>人在线</span>
         </Space>
       </Tooltip>
@@ -401,16 +413,21 @@ export const Livepeople = ({
   )
 }
 export const DanmuCount = ({
-  barrage_ount
+  barrageCountProps,
+  data
 }: {
-  barrage_ount: BaseWebsocketAdminProps['barrage_ount']
+  data: TaskListType
+  barrageCountProps: BaseWebsocketAdminProps['barrageCountProps']
 }) => {
+  useEffect(() => {
+    barrageCountProps.useEffect?.(data)
+  }, [])
   return (
     <Flex gap="small" align="center" className="mt-[.2rem]" justify="start">
       <Tooltip title="已记录弹幕">
         <Space>
           <BoldOutlined />
-          {barrage_ount} 弹幕
+          {data.barrageCount} 弹幕
         </Space>
       </Tooltip>
     </Flex>
@@ -452,7 +469,6 @@ export const CardLiveMoomLoading = ({ children }: { children?: ReactNode }) => {
 
 const MemberEnter = ({
   messageEffect,
-  messages_info,
   data,
   className
 }: BaseWebsocketAdminProps['MemberEnterProps'] & {
@@ -464,13 +480,13 @@ const MemberEnter = ({
   }, [])
   return (
     <Flex justify="start" align="center" className={className}>
-      {messages_info && (
+      {data.messages_info && (
         <ChatItem
-          key={messages_info?.message_id}
+          key={data.messages_info?.message_id}
           isAdmin={true}
           width="100%"
           className="w-full"
-          messages_info={messages_info}
+          messages_info={data.messages_info}
         />
       )}
     </Flex>
@@ -496,7 +512,7 @@ export const CardLiveMoomChat = ({
         />
       ) : (
         <Button
-          disabled
+          // disabled
           onClick={onClick}
           type="primary"
           block
@@ -509,11 +525,17 @@ export const CardLiveMoomChat = ({
   )
 }
 
-const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
+const LoginCom = ({
+  data,
+  onClose,
+  onExpired
+}: CardLiveMoomProps['LoginComProms'] & {
+  data: TaskListType
+}) => {
   const LoginStatusCom = () => {
     const [loading, setLoading] = useState<boolean>()
-    const isLoading = useMemo(() => loading, [loading, props])
-    switch (props.loginStatus) {
+    const isLoading = useMemo(() => loading, [loading, data])
+    switch (data.loginStatus) {
       case 'qrExpired':
         return (
           <Flex
@@ -523,7 +545,7 @@ const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
             onClick={async () => {
               if (isLoading) return
               setLoading(true)
-              await props.onExpired?.(props?.loginUrl)
+              await onExpired?.(data)
               setLoading(false)
             }}
             className="absolute z-[2] opacity-[80%] cursor-pointer content-center  rounded-lg left-0 right-0 top-0 bottom-0 bg-[#ffffff]  "
@@ -569,9 +591,13 @@ const LoginCom = (props: CardLiveMoomProps['LoginComProms']) => {
       wrap="wrap"
     >
       <LoginStatusCom />
-      {props?.loginUrl ? <QRCode value={props.loginUrl} /> : <></>}
+      {data?.loginUrl ? <QRCode value={data.loginUrl} /> : <></>}
       <Flex className=" absolute bottom-[-25%]">
-        <Button type="text" onClick={props.onClose} icon={<CloseOutlined />} />
+        <Button
+          type="text"
+          onClick={() => onClose?.(data)}
+          icon={<CloseOutlined />}
+        />
       </Flex>
     </Flex>
   )
@@ -602,8 +628,7 @@ export const MessagetypeRender = ({
 const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
   data,
   MemberEnterProps,
-  barrage_ount,
-  online_count,
+  barrageCountProps,
   AddFormItems,
   MessageIconsArrCom,
   MessageConent,
@@ -616,29 +641,29 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
 
   const onCardLiveMoomChatClick = async () => {
     setloading(true)
-    await LoginComProms?.onExpired?.(LoginComProms?.loginUrl)
+    await LoginComProms?.onExpired?.(data)
   }
 
   const onClose = () => {
-    LoginComProms.onClose?.()
+    LoginComProms.onClose?.(data)
     setloading(false)
   }
 
   useEffect(() => {
-    if (LoginComProms.loginStatus === 'loggedIn') {
+    if (data.loginStatus === 'loggedIn') {
       setloading(false)
     }
-  }, [LoginComProms.loginStatus])
+  }, [data.loginStatus])
+  console.log(data.task_status)
 
   return (
     <Flex justify="center" align="center" className="relative">
       {(data.task_status === 'reconnecting' || loading) && (
         <CardLiveMoomLoading>
           {loading ? (
-            LoginComProms.loginUrl ? (
+            data.loginUrl ? (
               <LoginCom
-                loginStatus={LoginComProms.loginStatus}
-                loginUrl={LoginComProms.loginUrl}
+                data={data}
                 onClose={onClose}
                 onExpired={LoginComProms.onExpired}
               />
@@ -661,7 +686,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
               justify="start"
               className="text-[.8rem] absolute top-[0rem] left-[1.6rem]"
             >
-              <Livepeople online_count={online_count} />
+              <Livepeople data={data} />
             </Flex>
             <Flex
               gap="small"
@@ -669,7 +694,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
               justify="start"
               className="text-[.8rem] absolute top-[2.1rem] left-[1.6rem]"
             >
-              <DanmuCount barrage_ount={barrage_ount} />
+              <DanmuCount data={data} barrageCountProps={barrageCountProps} />
             </Flex>
           </>
         }
@@ -687,6 +712,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
         hoverable
         extra={
           <LiveLoading
+            app_type={app_type}
             data={data}
             updateWebSocketTaskItem={updateWebSocketTaskItem}
           />
@@ -696,8 +722,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
           app_type,
           AddFormItems,
           MessageConent,
-          barrage_ount,
-          online_count,
+          barrageCountProps,
           updateWebSocketTask,
           updateWebSocketTaskItem
         })}

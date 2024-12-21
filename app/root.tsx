@@ -11,6 +11,7 @@ import zhCN from 'antd/locale/zh_CN'
 import LayoutConents from './Layout'
 
 import globalscss from './globals.scss?url'
+import AlphaVideo from './assets/AlphaVideo?url'
 import { ConfigProvider } from 'antd'
 import theme from './theme/adtd'
 
@@ -84,7 +85,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="stylesheet" href={globalscss} />
-        {/* <script src={__ac_signature} async></script> */}
+        <script src={AlphaVideo} async></script>
         {/* <script src={webmssdk} async></script> */}
       </head>
       <body>

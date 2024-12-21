@@ -6,7 +6,9 @@ import { ChatItem } from '~/components/BaseWebsocketAdmin/CardLiveMoom'
 import { tsListen } from '~/utils/listen'
 import type { DouyinMessageType } from '~/db/douyin/message'
 import type { DouyinWebSocketDanmaDb } from '~/db/douyin'
-import { getAllData, insertData } from '~/db/utils'
+import { getAllData, getDataByField, insertData } from '~/db/utils'
+import GiftMessageConent from './GiftMessageConent'
+import GiftVideo from './GiftVideo'
 /**
  * 弹幕组件
  * @param param0
@@ -27,8 +29,10 @@ const MessageConent = ({
   const containerRef = useAutoScrollToBottom<HTMLDivElement>(position)
 
   const get_tasks_danmu = async () => {
-    const res = await getAllData<DouyinWebSocketDanmaDb[]>(
+    const res = await getDataByField<DouyinWebSocketDanmaDb[]>(
       'tasks_danmu',
+      'task_id',
+      data.task_id,
       'douyin'
     )
     setMessages(res.slice(-100))
@@ -39,29 +43,29 @@ const MessageConent = ({
     tsListen<DouyinMessageType['DouyinWebcastChatMessage']['payload']>(
       'DouyinWebcastChatMessage',
       async ({ payload }) => {
-        if (!payload) return
-        const messageval: DouyinWebSocketDanmaDb = {
-          task_id: data.task_id,
-          ...payload,
-          user_url: `https://www.douyin.com/user/${payload.user_id}`,
-          timestamp: Date.now()
+        if (payload && payload.task_id === data.task_id) {
+          const messageval: DouyinWebSocketDanmaDb = {
+            ...payload,
+            user_url: `https://www.douyin.com/user/${payload.user_id}`,
+            timestamp: Date.now()
+          }
+
+          await insertData<DouyinWebSocketDanmaDb>({
+            table: 'tasks_danmu',
+            data: messageval,
+            dbName: 'douyin' // 请替换为实际的数据库名称
+          })
+
+          setMessages(state => {
+            const uniqueMessages = new Map(
+              state.map(msg => [msg.message_id, msg])
+            )
+            uniqueMessages.set(messageval.message_id, messageval)
+            return Array.from(uniqueMessages.values())
+              .sort((a, b) => a.timestamp - b.timestamp) // 根据timestamp排序
+              .slice(-100)
+          })
         }
-
-        await insertData<DouyinWebSocketDanmaDb>({
-          table: 'tasks_danmu',
-          data: messageval,
-          dbName: 'douyin' // 请替换为实际的数据库名称
-        })
-
-        setMessages(state => {
-          const uniqueMessages = new Map(
-            state.map(msg => [msg.message_id, msg])
-          )
-          uniqueMessages.set(messageval.message_id, messageval)
-          return Array.from(uniqueMessages.values())
-            .sort((a, b) => a.timestamp - b.timestamp) // 根据timestamp排序
-            .slice(-100)
-        })
       }
     )
   }, [data.task_id])
@@ -77,11 +81,13 @@ const MessageConent = ({
           gap: 'small',
           justify: 'center',
           align: 'start',
-          className: 'w-full h-[20rem]  overflow-y-auto  scroll-smooth'
+          className: 'w-full h-[20rem] relative overflow-y-auto  scroll-smooth'
         }
 
   return (
     <>
+      <GiftVideo />
+      <GiftMessageConent data={data} />
       <Flex ref={containerRef} {...FlexProps}>
         <Skeleton active loading={false}>
           {data.task_status === 'disconnected' && !isEmpty ? (

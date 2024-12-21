@@ -16,11 +16,10 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
   app_type,
   loading,
   taskList,
-  barrage_ount,
+  barrageCountProps,
   MemberEnterProps,
   MessageConent,
   MessageIconsArrCom,
-  online_count,
   AddFormItems,
   updateWebSocketTask: _updateWebSocketTask,
   getWebsocketTask,
@@ -197,8 +196,7 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
                 MemberEnterProps={MemberEnterProps}
                 AddFormItems={AddFormItems}
                 MessageIconsArrCom={MessageIconsArrCom}
-                barrage_ount={barrage_ount}
-                online_count={online_count}
+                barrageCountProps={barrageCountProps}
                 data={item}
                 app_type={app_type}
                 updateWebSocketTask={updateWebSocketTask}

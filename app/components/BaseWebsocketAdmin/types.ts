@@ -1,9 +1,34 @@
-import type { WebSocketTaskType } from '~/types/WebSocketdDB'
 import { type UpdateLiveProps } from './UpdateLive'
 import type { ReactNode } from 'react'
-export type BaseAppTypes = 'douyin' | 'tiktok'
+import type { WebSocketAppType, WebSocketTaskType } from '~/db/WebSocketdDB'
 
-export interface TaskListType extends WebSocketTaskType {}
+export interface TaskListType extends WebSocketTaskType {
+  /**
+   * 弹幕数量
+   */
+  barrageCount: number
+  /**
+   * 在线人数
+   */
+  online_count: number
+  /**
+   * 用户连接后的信息
+   */
+  messages_info?: DanmuMessage
+  /**
+   * 二维码连接
+   */
+  loginUrl?: string
+  /**
+   * 登陆状态
+   * - loggedIn: 用户已成功登录
+   * - loggedOut: 用户未登录
+   * - scanned: 二维码已成功扫描
+   * - qrExpired: 二维码已过期
+   * - cancel: 取消
+   */
+  loginStatus: 'loggedIn' | 'loggedOut' | 'scanned' | 'qrExpired' | 'cancel'
+}
 
 export type TaskItemStatus = 'start' | 'stop' | 'reload'
 
@@ -45,7 +70,7 @@ export interface BaseWebsocketAdminProps {
   /**
    * 应用类型
    */
-  readonly app_type: BaseAppTypes
+  readonly app_type: WebSocketAppType
   /**
    * 整个组件 loading
    */
@@ -57,12 +82,15 @@ export interface BaseWebsocketAdminProps {
   /**
    * 弹幕数量
    */
-  readonly barrage_ount: number
+  readonly barrageCountProps: {
+    // barrageCount: number
+    useEffect: (data: TaskListType) => void
+  }
 
-  /**
-   * 在线人数
-   */
-  readonly online_count: number
+  // /**
+  //  * 在线人数
+  //  */
+  // readonly online_count: number
 
   /**
    * 添加自定义字段
@@ -72,10 +100,10 @@ export interface BaseWebsocketAdminProps {
    * 用户连接组件
    */
   readonly MemberEnterProps: {
-    /**
-     * 用户连接后的信息
-     */
-    readonly messages_info?: DanmuMessage
+    // /**
+    //  * 用户连接后的信息
+    //  */
+    // readonly messages_info?: DanmuMessage
     /**
      *
      */
@@ -85,35 +113,35 @@ export interface BaseWebsocketAdminProps {
    * 登陆组件参数
    */
   readonly LoginComProms: {
-    /**
-     * 二维码连接
-     */
-    readonly loginUrl?: string
-    /**
-     * 登陆状态
-     * - loggedIn: 用户已成功登录
-     * - loggedOut: 用户未登录
-     * - scanned: 二维码已成功扫描
-     * - qrExpired: 二维码已过期
-     * - cancel: 取消
-     */
-    readonly loginStatus:
-      | 'loggedIn'
-      | 'loggedOut'
-      | 'scanned'
-      | 'qrExpired'
-      | 'cancel'
+    // /**
+    //  * 二维码连接
+    //  */
+    // readonly loginUrl?: string
+    // /**
+    //  * 登陆状态
+    //  * - loggedIn: 用户已成功登录
+    //  * - loggedOut: 用户未登录
+    //  * - scanned: 二维码已成功扫描
+    //  * - qrExpired: 二维码已过期
+    //  * - cancel: 取消
+    //  */
+    // readonly loginStatus:
+    //   | 'loggedIn'
+    //   | 'loggedOut'
+    //   | 'scanned'
+    //   | 'qrExpired'
+    //   | 'cancel'
     /**
      * 刷新函数
      * @returns
      */
-    readonly onExpired?: (url?: string) => Promise<void>
+    readonly onExpired?: (data: TaskListType) => Promise<void>
 
     /**
      * 关闭
      * @returns
      */
-    readonly onClose?: () => void
+    readonly onClose?: (data: TaskListType) => void
   }
   /**
    * message 自定义内容

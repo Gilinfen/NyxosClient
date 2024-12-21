@@ -1,6 +1,6 @@
 import type { DanmuMessage } from '~/components/BaseWebsocketAdmin/types'
-import type { WebSocketTaskType } from '~/types/WebSocketdDB'
 import type { DouyinMessageType } from './message'
+import type { WebSocketTaskType } from '../WebSocketdDB'
 
 /**
  * 抖音 websocket 任务表

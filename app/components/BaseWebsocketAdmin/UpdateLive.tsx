@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react'
 import type { ValidatorRule } from 'rc-field-form/lib/interface'
 
 import cn from 'classnames'
-import type { WebSocketTaskType } from '~/types/WebSocketdDB'
-import type { BaseWebsocketAdminProps } from './types'
+import type { BaseWebsocketAdminProps, TaskListType } from './types'
+// 导入 UUID 生成器
+import { v4 as uuidV4 } from 'uuid'
+import type { WebSocketTaskType } from '~/db/WebSocketdDB'
 
 export interface UpdateLiveForm extends WebSocketTaskType {}
 
@@ -120,6 +122,7 @@ export interface UpdateLiveProps {
   type: 'add' | 'update'
   app_type: BaseWebsocketAdminProps['app_type']
   data?: UpdateLiveForm
+  taskItem?: TaskListType
   updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   className?: string
   children?: React.ReactNode
@@ -129,6 +132,7 @@ export interface UpdateLiveProps {
 export default function UpdateLive({
   type,
   app_type,
+  taskItem,
   data,
   updateWebSocketTask,
   className,
@@ -155,6 +159,17 @@ export default function UpdateLive({
     await form.validateFields()
     const values = form.getFieldsValue()
     updateWebSocketTask?.(type, {
+      ...(taskItem
+        ? taskItem
+        : {
+            barrageCount: 0,
+            online_count: 0,
+            loginStatus: 'loggedOut',
+            app_type,
+            task_id: uuidV4(), // 生成唯一任务 ID
+            task_status: 'disconnected', // 初始状态为断开
+            timestamp: Date.now() // 记录时间戳
+          }),
       ...values
     })
     messageApi.success(`${type === 'add' ? '添加' : '编辑'}直播间成功`)

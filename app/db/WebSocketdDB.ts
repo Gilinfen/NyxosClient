@@ -1,3 +1,5 @@
+export type WebSocketAppType = 'douyin'
+
 export interface WebSocketTaskType {
   /**
    * WebSocket 连接的任务ID
@@ -10,7 +12,7 @@ export interface WebSocketTaskType {
   /**
    * 应用类型
    */
-  readonly app_type: string
+  readonly app_type: WebSocketAppType
   /**
    * 连接的URL
    */

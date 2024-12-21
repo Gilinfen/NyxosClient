@@ -227,9 +227,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
                 type="primary"
                 onClick={onOpen}
                 loading={loading}
-              >
-                刷新
-              </Button>
+              ></Button>
               <Select
                 options={[
                   { label: '直播间', value: 'task' },

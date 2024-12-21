@@ -1,6 +1,7 @@
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { message } from 'antd'
+import JSZip from 'jszip'
 
 /**
  * 保存 Excel 文件到本地
@@ -114,4 +115,60 @@ export const stringToJson = (str: string): any => {
   } catch {
     return str
   }
+}
+export async function fetchAndExtractZipAsBase64(
+  zipUrl: string
+): Promise<string[]> {
+  try {
+    console.log('Fetching ZIP file...')
+
+    // 下载 ZIP 文件
+    const response = await fetch(zipUrl)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ZIP file: ${response.statusText}`)
+    }
+
+    // 读取 ZIP 文件为 ArrayBuffer
+    const zipData = await response.arrayBuffer()
+
+    console.log('Unzipping file...')
+    const zip = await JSZip.loadAsync(zipData) // 加载 ZIP 文件
+    const base64Urls: string[] = []
+
+    // 遍历 ZIP 中的文件
+    for (const [filename, file] of Object.entries(zip.files)) {
+      if (!file.dir && filename.endsWith('.mp4')) {
+        // 检查是否为 MP4 文件
+        console.log(`Extracting file: ${filename}`)
+
+        // 读取文件为 Blob
+        const fileBlob = await file.async('blob')
+
+        // 将 Blob 转换为 Base64 URL
+        const base64Url = await blobToBase64(fileBlob)
+        base64Urls.push(base64Url)
+
+        console.log(`Generated Base64 URL: ${base64Url}`)
+      }
+    }
+
+    return base64Urls
+  } catch (error) {
+    console.error(`An error occurred: ${(error as Error).message}`)
+    return []
+  }
+}
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (reader.result && typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to convert Blob to Base64.'))
+      }
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }

@@ -114,3 +114,24 @@ export const getAllData = async <T>(
   const rows = await db.select(`SELECT * FROM ${table}`)
   return rows as T
 }
+
+/**
+ * 根据字段查询表的所有数据
+ * @param table 表名
+ * @param field 字段名
+ * @param value 字段值
+ * @param dbName 数据库名称
+ * @returns 返回表中符合条件的数据
+ */
+export const getDataByField = async <T>(
+  table: DbTableTypes[DbNameTypes]['tables'][number],
+  field: string,
+  value: string | number,
+  dbName: DbNameTypes
+): Promise<T> => {
+  const db = await getDbData({ dbName })
+  const rows = await db.select(`SELECT * FROM ${table} WHERE ${field} = ?`, [
+    value
+  ])
+  return rows as T
+}

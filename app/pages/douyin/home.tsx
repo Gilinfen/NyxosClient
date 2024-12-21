@@ -9,7 +9,6 @@ import { DanmuAreaChartComponent } from './DanmeFenxi'
 // 导入类型定义
 import type {
   BaseWebsocketAdminProps,
-  DanmuMessage,
   TaskListType
 } from '~/components/BaseWebsocketAdmin/types'
 // 导入 Ant Design 的表单和选择组件
@@ -25,13 +24,11 @@ import type {
 // 导入数据库操作工具函数
 import {
   deleteData,
-  getAllData,
+  getDataByField,
   getDbData,
   insertData,
   updateData
 } from '~/db/utils'
-// 导入 UUID 生成器
-import { v4 as uuidV4 } from 'uuid'
 // 导入延迟工具函数
 import { delay, poll, saveExcelFile } from '~/utils'
 // 导入消息类
@@ -47,20 +44,21 @@ import { DouyinMessage } from './message/index'
 import { tsListen } from '~/utils/listen'
 import * as XLSX from 'xlsx'
 import dayjs from 'dayjs'
+import GiiftFenxi from './GiiftFenxi'
 
 // 定义抖音页面组件
 export default function DouyinPage() {
-  // 定义在线用户数量状态
-  const [online_count, setonlineCount] = useState<number>(0)
-  // 定义弹幕数量状态
-  // const barrage_ount = useRef<number>(0)
-  const [barrage_ount, setbarrageCount] = useState<number>(0)
-  // 定义成员进入消息信息
-  const [messages_info, setmessagesInfo] = useState<DouyinWebSocketDanmaDb>()
   // 定义任务列表状态
   const [taskList, setTaskList] = useState<TaskListType[]>([])
   // 定义加载状态
   const [loading, setLoading] = useState<boolean>()
+  // 异步任务进行表
+  const [asyncTaskList, setAsyncTask] = useState<string[]>([])
+  const timeRef = useRef<{
+    barrageCountEffectItm: NodeJS.Timeout | null
+  }>({
+    barrageCountEffectItm: null
+  })
   // 定义消息类型状态
   const [messageTypeState, setmessageTypeState] = useState<
     {
@@ -69,13 +67,32 @@ export default function DouyinPage() {
     }[]
   >([])
 
-  // 定义登录 URL 状态
-  const [loginUrl, setLoginUrl] = useState<string | undefined>()
-  // 定义二维码过期状态
-  const [loginStatus, setloginStatus] =
-    useState<BaseWebsocketAdminProps['LoginComProms']['loginStatus']>(
-      'loggedOut'
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      timeRef.current?.barrageCountEffectItm &&
+        clearInterval(timeRef.current?.barrageCountEffectItm)
+    }
+  }, [])
+
+  const clearAsyncTask = (task_id: string) => {
+    setAsyncTask(state => state.filter(e => e !== task_id))
+  }
+
+  const addAsyncTask = (task_id: string) => {
+    setAsyncTask(state => [...state, task_id])
+  }
+
+  const updateTaskById = (
+    taskId: string,
+    updatedValues: Partial<TaskListType>
+  ) => {
+    setTaskList(prevTaskList =>
+      prevTaskList.map(task =>
+        task.task_id === taskId ? { ...task, ...updatedValues } : task
+      )
     )
+  }
 
   const messageEffect: BaseWebsocketAdminProps['MemberEnterProps']['messageEffect'] =
     data => {
@@ -83,7 +100,7 @@ export default function DouyinPage() {
         'DouyinWebcastMemberMessage',
         async val => {
           const payload = val.payload
-          if (payload) {
+          if (payload && payload.task_id === data.task_id) {
             const menber: DouyinWebSocketUserDb = {
               ...payload,
               task_id: data.task_id,
@@ -91,12 +108,14 @@ export default function DouyinPage() {
               timestamp: Date.now()
             }
 
-            setmessagesInfo({
-              ...menber,
-              message: '进人直播间'
-            } as DouyinWebSocketDanmaDb)
-
-            setonlineCount(payload.member_count)
+            updateTaskById(data.task_id, {
+              ...data,
+              online_count: payload.member_count,
+              messages_info: {
+                ...menber,
+                message: '进人直播间'
+              } as DouyinWebSocketDanmaDb
+            })
 
             await insertData<DouyinWebSocketUserDb>({
               table: 'tasks_users',
@@ -114,19 +133,27 @@ export default function DouyinPage() {
       )
     }
 
-  useEffect(() => {
-    const timeid = setInterval(async () => {
-      const res = await getAllData<DouyinWebSocketDanmaDb[]>(
-        'tasks_danmu',
-        'douyin'
-      )
-      // barrage_ount.current = res.length
-      setbarrageCount(res.length)
-    }, 1000)
-    return () => {
-      clearInterval(timeid)
+  const barrageCountEffect: BaseWebsocketAdminProps['barrageCountProps']['useEffect'] =
+    data => {
+      // timeRef.current.barrageCountEffectItm = setInterval(async () => {
+      //   if (
+      //     data.task_status === 'connecting' &&
+      //     !asyncTaskList.includes(data.task_id)
+      //   ) {
+      //     console.log(asyncTaskList)
+      //     const res = await getDataByField<DouyinWebSocketDanmaDb[]>(
+      //       'tasks_danmu',
+      //       'task_id',
+      //       data.task_id,
+      //       'douyin'
+      //     )
+      //     updateTaskById(data.task_id, {
+      //       ...data,
+      //       barrageCount: res.length
+      //     })
+      //   }
+      // }, 1000)
     }
-  }, [])
 
   // 使用副作用钩子获取任务和消息类型
   useEffect(() => {
@@ -180,16 +207,19 @@ export default function DouyinPage() {
         // 示例: 根据任务类型执行不同的操作
         switch (type) {
           case 'add':
-            const value = item as DouyinWebSocketTaskDb // 将项转换为任务数据库类型
+            const value = item as unknown as DouyinWebSocketTaskDb // 将项转换为任务数据库类型
             await insertData<DouyinWebSocketTaskDb>({
               dbName: 'douyin',
               table: 'tasks',
               data: {
-                ...value,
-                task_id: uuidV4(), // 生成唯一任务 ID
-                app_type: 'douyin',
-                task_status: 'disconnected', // 初始状态为断开
-                timestamp: Date.now() // 记录时间戳
+                message_type: value.message_type,
+                keywords: value.keywords,
+                task_name: value.task_name,
+                live_url: value.live_url,
+                description: value.description,
+                task_id: value.task_id, // 生成唯一任务 ID
+                task_status: value.task_status, // 初始状态为断开
+                timestamp: value.timestamp // 记录时间戳
               }
             })
             break
@@ -222,9 +252,11 @@ export default function DouyinPage() {
     async task_id => {
       try {
         if (task_id) {
+          addAsyncTask(task_id)
+          clearAsyncTask(task_id)
           return [] // 如果有任务 ID 返回空数组
         }
-        return await getDbTask() // 获取数据库任务
+        return (await getDbTask()) as any[] // 获取数据库任务
       } catch (error) {
         console.error('获取任务失败:', error) // 处理错误
       }
@@ -247,7 +279,7 @@ export default function DouyinPage() {
       const douyinmes = new DouyinMessage()
       // 创建工作表
       const ws = XLSX.utils.json_to_sheet(
-        (taskList as DouyinWebSocketTaskDb[]).map(item => {
+        (taskList as unknown as DouyinWebSocketTaskDb[]).map(item => {
           return {
             任务ID: item.task_id,
             直播间名称: item.task_name,
@@ -308,6 +340,7 @@ export default function DouyinPage() {
   // 断开单个 WebSocket 任务
   const disconnecItemtWebSocketTask = async (data: TaskListType) => {
     try {
+      addAsyncTask(data.task_id)
       await delay(2000) // 延迟 2 秒
       // 这里可以添加断开单个任务的逻辑
       console.log('断开任务:', data) // 打印断开任务信息
@@ -319,6 +352,7 @@ export default function DouyinPage() {
   // 连接单个 WebSocket 任务
   const connectingItemtWebSocketTask = async (data: TaskListType) => {
     try {
+      addAsyncTask(data.task_id)
       const wsurl = await DouyinBaseInject.getWebsocketUrl(data.live_url)
 
       if (!wsurl) return
@@ -330,6 +364,7 @@ export default function DouyinPage() {
       await connect_to_websocket({
         url: wsurl.wsurl,
         live_room_id,
+        task_id: data.task_id,
         headers: {
           cookie: `ttwid=${ttwid}`,
           'user-agent': userAgent
@@ -338,9 +373,11 @@ export default function DouyinPage() {
 
       // 这里可以添加连接单个任务的逻辑
       console.log('连接任务:', data) // 打印连接任务信息
+      clearAsyncTask(data.task_id)
       message.success('连接成功')
     } catch (error) {
       console.error('连接任务失败:', error) // 处理错误
+      clearAsyncTask(data.task_id)
       message.error('连接失败')
     }
   }
@@ -349,14 +386,25 @@ export default function DouyinPage() {
   const updateWebSocketTaskItem: BaseWebsocketAdminProps['updateWebSocketTaskItem'] =
     async (data, status) => {
       try {
-        let newData = data // 创建新数据对象
+        // 加入异步表
+        addAsyncTask(data.task_id)
+        let newData = data as unknown as DouyinWebSocketTaskDb // 创建新数据对象
         newData.task_status = 'reconnecting' // 更新状态为重连
 
         // 更新数据库中的任务数据
-        const updateDatafn = async (value: TaskListType) => {
+        const updateDatafn = async (value: DouyinWebSocketTaskDb) => {
           await updateData({
             table: 'tasks',
-            data: value,
+            data: {
+              message_type: value.message_type,
+              keywords: value.keywords,
+              task_name: value.task_name,
+              live_url: value.live_url,
+              description: value.description,
+              task_id: value.task_id, // 生成唯一任务 ID
+              task_status: value.task_status, // 初始状态为断开
+              timestamp: value.timestamp // 记录时间戳
+            },
             qkey: 'task_id',
             dbName: 'douyin',
             db_id: value.task_id // 更新指定任务 ID 的数据
@@ -389,8 +437,11 @@ export default function DouyinPage() {
         }
 
         await updateDatafn(newData) // 更新数据库中的任务数据
+        // 清除异步
+        clearAsyncTask(data.task_id)
         message.success('更新任务状态成功')
       } catch (error) {
+        clearAsyncTask(data.task_id)
         console.error('更新任务状态失败:', error) // 处理错误
         message.error('更新任务状态失败')
       }
@@ -398,15 +449,13 @@ export default function DouyinPage() {
 
   // 处理二维码过期
   const onExpired: BaseWebsocketAdminProps['LoginComProms']['onExpired'] =
-    async url => {
+    async data => {
       // 这里可以添加刷新二维码的逻辑
       try {
-        if (url) {
+        if (data.live_url) {
           // 刷新url
         }
-        const qtburl =
-          DouyinAPIEndpoints.SSO_DOMAIN.BASE_URL +
-          DouyinAPIEndpoints.SSO_DOMAIN.ROUTERS.SSO_LOGIN_GET_QR
+        const qtburl = DouyinAPIEndpoints.SSO_DOMAIN.ROUTERS.SSO_LOGIN_GET_QR
 
         const ttwid = await DouyinCookieApi.getTtwid()
         const msToken = await DouyinBaseInject.getmsToken()
@@ -445,19 +494,20 @@ export default function DouyinPage() {
         const res = await makeRequest<any>({
           url: qutl,
           headers: {
-            cookie: `ttwid=${ttwid}`
+            cookie: `ttwid=${ttwid}`,
+            'user-agent': userange
           }
         })
 
         const quurl = res?.[0]?.data.qrcode_index_url
         const token = res?.[0]?.data.token
 
-        // 请求获取url
-        setLoginUrl(quurl)
-        setloginStatus('loggedOut')
+        updateTaskById(data.task_id, {
+          loginUrl: quurl,
+          loginStatus: 'loggedOut'
+        })
 
         const check_qrconnect_url_ =
-          DouyinAPIEndpoints.SSO_DOMAIN.BASE_URL +
           DouyinAPIEndpoints.SSO_DOMAIN.ROUTERS.SSO_LOGIN_CHECK_QR
 
         const check_qrconnect_params: DouyinAPIEndpointsInterface['SSO_DOMAIN']['ROUTERS']['SSO_LOGIN_CHECK_QR']['params'] =
@@ -473,7 +523,7 @@ export default function DouyinPage() {
         // 轮询
         poll(async () => {
           // 取消
-          if (loginStatus === 'cancel') return true
+          if (data.loginStatus === 'cancel') return true
           const res = await makeRequest<
             DouyinAPIEndpointsInterface['SSO_DOMAIN']['ROUTERS']['SSO_LOGIN_CHECK_QR']['response']
           >({
@@ -491,15 +541,21 @@ export default function DouyinPage() {
           const log_status = res[0].data.status
           switch (log_status) {
             case '1':
-              setloginStatus('loggedOut')
+              updateTaskById(data.task_id, {
+                loginStatus: 'loggedOut'
+              })
               return false
 
             case '2':
-              setloginStatus('scanned')
+              updateTaskById(data.task_id, {
+                loginStatus: 'scanned'
+              })
               return true
 
             case '5':
-              setloginStatus('qrExpired')
+              updateTaskById(data.task_id, {
+                loginStatus: 'qrExpired'
+              })
               return true
 
             default:
@@ -511,10 +567,13 @@ export default function DouyinPage() {
       }
     }
 
-  const qtloginClose = () => {
-    setloginStatus('cancel')
-    setLoginUrl(void 0)
-  }
+  const qtloginClose: BaseWebsocketAdminProps['LoginComProms']['onClose'] =
+    data => {
+      updateTaskById(data.task_id, {
+        loginStatus: 'cancel',
+        loginUrl: void 0
+      })
+    }
 
   const MessageConentMemo = useMemo(() => {
     return ({ data }: { data: TaskListType }) => <MessageConent data={data} />
@@ -522,7 +581,8 @@ export default function DouyinPage() {
 
   const MessageIconsArrComMemo = useMemo(() => {
     return ({ data }: { data: TaskListType }) => [
-      <DanmuAreaChartComponent key={'chats'} data={data} /> // 传递弹幕区域图表组件
+      <DanmuAreaChartComponent key={'chats'} data={data} />, // 传递弹幕区域图表组件
+      <GiiftFenxi key={'gift'} />
     ]
   }, [])
 
@@ -585,14 +645,12 @@ export default function DouyinPage() {
         updateWebSocketTaskItem={updateWebSocketTaskItem} // 传递更新任务状态函数
         clearAllWebSocketTask={clearAllWebSocketTask} // 传递清除所有任务函数
         MemberEnterProps={{
-          messages_info, // 传递消息信息
           messageEffect
         }}
-        barrage_ount={barrage_ount} // 传递弹幕数量
-        online_count={online_count} // 传递在线用户数量
+        barrageCountProps={{
+          useEffect: barrageCountEffect
+        }}
         LoginComProms={{
-          loginStatus, // 传递二维码过期状态
-          loginUrl, // 传递登录 URL
           onExpired, // 传递二维码过期处理函数
           onClose: qtloginClose
         }}
