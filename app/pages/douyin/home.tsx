@@ -38,7 +38,7 @@ import { makeRequest, objectToParams } from '~/utils/request'
 import { DouyinCookieApi } from './api/cookie'
 import DouyinBaseInject from './api/base'
 import { getUserAgent } from '~/common/api'
-import { connect_to_websocket } from '~/utils/websocket'
+import { close_to_websocket, connect_to_websocket } from '~/utils/websocket'
 import type { DouyinMessageType } from '~/db/douyin/message'
 import { DouyinMessage } from './message/index'
 import { tsListen } from '~/utils/listen'
@@ -341,7 +341,10 @@ export default function DouyinPage() {
   const disconnecItemtWebSocketTask = async (data: TaskListType) => {
     try {
       addAsyncTask(data.task_id)
-      await delay(2000) // 延迟 2 秒
+      // await delay(2000) // 延迟 2 秒
+      await close_to_websocket({
+        task_id: data.task_id
+      })
       // 这里可以添加断开单个任务的逻辑
       console.log('断开任务:', data) // 打印断开任务信息
     } catch (error) {
@@ -363,7 +366,6 @@ export default function DouyinPage() {
 
       await connect_to_websocket({
         url: wsurl.wsurl,
-        live_room_id,
         task_id: data.task_id,
         headers: {
           cookie: `ttwid=${ttwid}`,

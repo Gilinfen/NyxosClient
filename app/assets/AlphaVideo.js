@@ -1,3 +1,4 @@
+// https://codepen.io/qingzhou_coder/pen/gOwBQee
 class AlphaVideo {
   constructor(option) {
     const defaultOption = {

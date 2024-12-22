@@ -3,12 +3,7 @@ use tauri::AppHandle;
 use crate::{douyin::live::message, proto::douyin_protos};
 
 // 每一条直播间消息解析
-pub async fn process_messages(
-    app: &AppHandle,
-    messages: &Vec<douyin_protos::Message>,
-    live_room_id: &str,
-    task_id: &str,
-) {
+pub fn process_messages(app: &AppHandle, messages: &Vec<douyin_protos::Message>, task_id: &str) {
     let contents: Vec<String> = messages.iter().map(|m| m.method.clone()).collect();
     println!("contents :{:?}", contents);
 
@@ -59,10 +54,11 @@ pub async fn process_messages(
             // "WebcastRanklistHourEntranceMessage"
             // "WebcastInRoomBannerMessage"
             // "WebcastRoomStreamAdaptationMessage"
-            _ => println!(
-                "[onMessage] 待解析方法 {} 等待解析～ 房间Id：{}",
-                msg.method, live_room_id
-            ),
+            _ => (),
+            // println!(
+            //     "[onMessage] 待解析方法 {} 等待解析～ 房间Id：{}",
+            //     msg.method, live_room_id
+            // ),
         }
     }
 }
