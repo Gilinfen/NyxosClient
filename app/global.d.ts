@@ -3,6 +3,9 @@ export {}
 declare global {
   interface Window {
     AlphaVideo: any
+    TAURI_DBS: {
+      douyin: Database
+    }
     DOUYIN_API: {
       get__ac_signature: (__ac_nonce: string) => string
       generate_a_bogus: (params: string, ua: string) => string

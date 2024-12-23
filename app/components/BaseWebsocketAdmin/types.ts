@@ -4,10 +4,6 @@ import type { WebSocketAppType, WebSocketTaskType } from '~/db/WebSocketdDB'
 
 export interface TaskListType extends WebSocketTaskType {
   /**
-   * 弹幕数量
-   */
-  barrageCount: number
-  /**
    * 在线人数
    */
   online_count: number
@@ -67,6 +63,7 @@ export interface DanmuMessage {
 }
 
 export interface BaseWebsocketAdminProps {
+  children?: ReactNode
   /**
    * 应用类型
    */
@@ -75,89 +72,11 @@ export interface BaseWebsocketAdminProps {
    * 整个组件 loading
    */
   readonly loading?: boolean
-  /**
-   * 任务列表
-   */
-  readonly taskList: TaskListType[]
-  /**
-   * 弹幕数量
-   */
-  readonly barrageCountProps: {
-    // barrageCount: number
-    useEffect: (data: TaskListType) => void
-  }
-
-  // /**
-  //  * 在线人数
-  //  */
-  // readonly online_count: number
 
   /**
    * 添加自定义字段
    */
   readonly AddFormItems?: UpdateLiveProps['FormItems']
-  /**
-   * 用户连接组件
-   */
-  readonly MemberEnterProps: {
-    // /**
-    //  * 用户连接后的信息
-    //  */
-    // readonly messages_info?: DanmuMessage
-    /**
-     *
-     */
-    readonly messageEffect?: (data: TaskListType) => void
-  }
-  /**
-   * 登陆组件参数
-   */
-  readonly LoginComProms: {
-    // /**
-    //  * 二维码连接
-    //  */
-    // readonly loginUrl?: string
-    // /**
-    //  * 登陆状态
-    //  * - loggedIn: 用户已成功登录
-    //  * - loggedOut: 用户未登录
-    //  * - scanned: 二维码已成功扫描
-    //  * - qrExpired: 二维码已过期
-    //  * - cancel: 取消
-    //  */
-    // readonly loginStatus:
-    //   | 'loggedIn'
-    //   | 'loggedOut'
-    //   | 'scanned'
-    //   | 'qrExpired'
-    //   | 'cancel'
-    /**
-     * 刷新函数
-     * @returns
-     */
-    readonly onExpired?: (data: TaskListType) => Promise<void>
-
-    /**
-     * 关闭
-     * @returns
-     */
-    readonly onClose?: (data: TaskListType) => void
-  }
-  /**
-   * message 自定义内容
-   */
-  readonly MessageConent?: ({ data }: { data: TaskListType }) => ReactNode
-
-  /**
-   * 右下角 控制器
-   * @param param0
-   * @returns
-   */
-  readonly MessageIconsArrCom?: ({
-    data
-  }: {
-    data: TaskListType
-  }) => ReactNode[]
 
   /**
    * 添加/更新，任务

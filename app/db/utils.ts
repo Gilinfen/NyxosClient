@@ -1,8 +1,16 @@
 import Database from '@tauri-apps/plugin-sql'
 import { DB_TABLE_TYPES, type DbNameTypes, type DbTableTypes } from './db_views'
 
+export const initDbdata = async () => {
+  const douyin = await Database.load(`sqlite:douyin.db`)
+  window.TAURI_DBS = {
+    douyin
+  }
+  console.log('数据库初始化完成')
+}
+
 export const getDbData = async ({ dbName }: { dbName: DbNameTypes }) => {
-  return await Database.load(`sqlite:${dbName}.db`)
+  return window.TAURI_DBS[dbName]
 }
 
 /**
@@ -52,6 +60,15 @@ export const deleteData = async ({
 
   if (params) {
     const { key, value } = params
+    // 根据 DB_TABLE_TYPES 删除子表
+    const subTables =
+      DB_TABLE_TYPES[dbName].db_views[
+        table as keyof DbTableTypes[DbNameTypes]['db_views']
+      ] || []
+    for (const subTable of subTables) {
+      await db.execute(`DELETE FROM ${subTable} WHERE ${key} = ?`, [value])
+      console.log(`正在删除子表: ${subTable}，所有数据已被删除`)
+    }
     await db.execute(`DELETE FROM ${table} WHERE ${key} = ?`, [value])
     console.log(`正在删除表: ${table}，条件: ${key} = ${value}`)
   } else {

@@ -5,6 +5,9 @@ import { CardItemLogo } from '~/components/BaseWebsocketAdmin/CardLiveMoom'
 import type { TaskListType } from '~/components/BaseWebsocketAdmin/types'
 import type { DouyinMessageType } from '~/db/douyin/message'
 import { tsListen } from '~/utils/listen'
+import { useQueueStack } from '~/hook/useDelayStack.ts'
+import type { DouyinWebSocketDanmaDb, DouyinWebSocketGiftDb } from '~/db/douyin'
+import { getDataByField, insertData, updateData } from '~/db/utils'
 
 const GiffItem = ({
   data
@@ -68,50 +71,87 @@ interface Props {
 }
 
 const BatchRenderer: React.FC<Props> = ({ data }) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => {
-        // 如果达到数组末尾，重新开始或停止
-        return prevIndex + 2 >= data.length ? 0 : prevIndex + 2
-      })
-    }, 500)
-
-    return () => clearInterval(interval) // 清理定时器
-  }, [data])
-
-  const currentBatch = data.slice(currentIndex, currentIndex + 2)
-
   return (
     <>
-      {currentBatch.map(item => (
+      {data.map(item => (
         <GiffItem key={item?.message_id} data={item} />
       ))}
     </>
   )
 }
 
-export default function GiffMessageConent({ data }: { data: TaskListType }) {
-  const [giftstate, setgiftstate] = useState<
-    DouyinMessageType['DouyinWebcastGiftMessage']['payload'][]
-  >([])
-  useEffect(() => {
-    tsListen<DouyinMessageType['DouyinWebcastGiftMessage']['payload']>(
-      'DouyinWebcastGiftMessage',
-      async ({ payload }) => {
+export const pubtsListen = async (
+  data: TaskListType,
+  callback?: (
+    value: DouyinMessageType['DouyinWebcastGiftMessage']['payload']
+  ) => void
+) => {
+  tsListen<DouyinMessageType['DouyinWebcastGiftMessage']['payload']>(
+    'DouyinWebcastGiftMessage',
+    async ({ payload }) => {
+      try {
         if (payload && payload.task_id === data.task_id) {
-          console.log(payload)
-          setgiftstate(state => {
-            const uniqueMessages = new Map(
-              state.map(msg => [msg?.message_id, msg])
-            )
-            uniqueMessages.set(payload.message_id, payload)
-            return Array.from(uniqueMessages.values())
-          })
+          const gits = await getDataByField<DouyinWebSocketGiftDb[]>(
+            'tasks_gift',
+            'user_id',
+            payload.user_id,
+            'douyin'
+          )
+          const giftitem = gits?.[0]
+
+          // if (giftitem) {
+          //   await updateData<DouyinWebSocketGiftDb>({
+          //     table: 'tasks_gift',
+          //     data: {
+          //       ...giftitem,
+          //       timestamp: Date.now(),
+          //       repeat_count:
+          //         parseInt(`${giftitem.repeat_count}`) +
+          //         parseInt(`${payload.repeat_count}`)
+          //     },
+          //     qkey: 'user_id',
+          //     db_id: payload.user_id,
+          //     dbName: 'douyin'
+          //   })
+          // } else {
+          //   await insertData<DouyinWebSocketGiftDb>({
+          //     table: 'tasks_gift',
+          //     data: {
+          //       user_id: payload.user_id,
+          //       user_name: payload.user_name,
+          //       task_id: data.task_id,
+          //       gift_id: payload.gift.id,
+          //       gift_name: payload.gift.name,
+          //       gift_url: payload.image?.url_list_list[0],
+          //       repeat_count: payload.repeat_count
+          //     },
+          //     dbName: 'douyin' // 请替换为实际的数据库名称
+          //   })
+          // }
+
+          callback?.(payload)
         }
+      } catch (error) {
+        console.error(error)
       }
-    )
+    }
+  )
+}
+
+export default function GiffMessageConent({ data }: { data: TaskListType }) {
+  const { list, addItems } = useQueueStack<
+    DouyinMessageType['DouyinWebcastGiftMessage']['payload']
+  >({
+    initialList: [],
+    getKey: task => task!.message_id, // 告诉 Hook 如何获取唯一键
+    initialMaxSize: 2, // 初始最大长度为 5
+    queueEnabled: false,
+    skipDuplicates: false // 为 true 时跳过重复
+  })
+  useEffect(() => {
+    pubtsListen(data, payload => {
+      addItems([payload], 300)
+    })
   }, [data.task_id])
 
   return (
@@ -121,12 +161,12 @@ export default function GiffMessageConent({ data }: { data: TaskListType }) {
       align="center"
     >
       <Flex
-        className="h-[10rem] absolute w-[60%]"
+        className="h-[10rem] absolute w-[50%]"
         justify="end"
         align="center"
         wrap={'wrap'}
       >
-        <BatchRenderer data={giftstate} />
+        <BatchRenderer data={list} />
       </Flex>
     </Flex>
   )

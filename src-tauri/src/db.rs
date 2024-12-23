@@ -27,7 +27,6 @@ pub fn create_douyin_tables() -> Vec<Migration> {
                     message_id TEXT NOT NULL, -- 消息ID
                     user_name TEXT NOT NULL, -- 用户名称
                     message TEXT NOT NULL, -- 消息内容
-                    user_url TEXT NOT NULL, -- 用户主页
                     timestamp INTEGER NOT NULL, -- 发送时间
                     task_id TEXT NOT NULL, -- 关联到 tasks 表
                     PRIMARY KEY (message_id),
@@ -41,7 +40,6 @@ pub fn create_douyin_tables() -> Vec<Migration> {
             sql: "CREATE TABLE IF NOT EXISTS tasks_users (
                     user_id TEXT NOT NULL, -- 用户ID
                     user_name TEXT NOT NULL, -- 用户名称
-                    user_url TEXT NOT NULL, -- 用户主页
                     timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
                     task_id TEXT NOT NULL, -- 关联到 tasks 表
                     PRIMARY KEY (user_id),
@@ -54,6 +52,11 @@ pub fn create_douyin_tables() -> Vec<Migration> {
             description: "create tasks_gift table",
             sql: "CREATE TABLE IF NOT EXISTS tasks_gift (
                     user_id TEXT NOT NULL, -- 用户ID
+                    user_name TEXT NOT NULL, -- 用户名称
+                    gift_id TEXT NOT NULL, -- 礼物ID
+                    gift_name TEXT NOT NULL, -- 礼物名称
+                    repeat_count TEXT NOT NULL, -- 礼物数量
+                    gift_url TEXT NOT NULL, -- 礼物url
                     timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
                     task_id TEXT NOT NULL, -- 关联到 tasks 表
                     PRIMARY KEY (user_id),

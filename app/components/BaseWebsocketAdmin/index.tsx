@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Button, Flex, Divider, Empty, Skeleton, message, Modal } from 'antd'
 import {
   AppstoreOutlined,
@@ -10,25 +10,18 @@ import {
 import CardLiveMoom from './CardLiveMoom'
 import SearchInput from './search'
 import UpdateLive from './UpdateLive'
-import type { BaseWebsocketAdminProps, TaskListType } from './types'
+import type { BaseWebsocketAdminProps } from './types'
 
 const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
   app_type,
   loading,
-  taskList,
-  barrageCountProps,
-  MemberEnterProps,
-  MessageConent,
-  MessageIconsArrCom,
   AddFormItems,
   updateWebSocketTask: _updateWebSocketTask,
-  getWebsocketTask,
   onSearch,
   exportExcel: _exportExcel,
   importExcel: _importExcel,
-  updateWebSocketTaskItem: _updateWebSocketTaskItem,
   clearAllWebSocketTask,
-  LoginComProms
+  children
 }) => {
   const [isList, setIsList] = useState(false)
   const [messageApi, contextHolder] = message.useMessage()
@@ -47,34 +40,6 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
             break
           case 'delete':
             messageApi.success('任务删除成功')
-            break
-          default:
-            messageApi.warning('未知操作类型')
-            break
-        }
-        // getTaskAll()
-      } catch (error: any) {
-        messageApi.error(`操作失败: ${error?.message}`)
-      }
-    }
-
-  const updateWebSocketTaskItem: BaseWebsocketAdminProps['updateWebSocketTaskItem'] =
-    async (item, type) => {
-      try {
-        await _updateWebSocketTaskItem?.(item, type)
-
-        switch (type) {
-          case 'start':
-            // 处理启动逻辑
-            messageApi.success('任务已启动')
-            break
-          case 'stop':
-            // 处理停止逻辑
-            messageApi.success('任务已停止')
-            break
-          case 'reload':
-            // 处理重载逻辑
-            messageApi.success('任务已重载')
             break
           default:
             messageApi.warning('未知操作类型')
@@ -176,36 +141,9 @@ const BaseWebsocketAdmin: React.FC<BaseWebsocketAdminProps> = ({
       </Flex>
       <Divider />
       <Skeleton active loading={loading}>
-        {!taskList.length ? (
-          <Empty />
-        ) : isList ? (
-          // <ListLiveMoom
-          //   data={taskList}
-          //   onStart={item => handleStatus(item, 'start')}
-          //   onStop={item => handleStatus(item, 'stop')}
-          //   onDelete={item => updateWebSocketTask?.(item, 'delete')}
-          //   onReload={item => handleStatus(item, 'reload')}
-          // />
-          <></>
-        ) : (
-          <Flex gap="middle" wrap="wrap" justify="space-between" align="start">
-            {taskList.map(item => (
-              <CardLiveMoom
-                key={item.task_id}
-                MessageConent={MessageConent}
-                MemberEnterProps={MemberEnterProps}
-                AddFormItems={AddFormItems}
-                MessageIconsArrCom={MessageIconsArrCom}
-                barrageCountProps={barrageCountProps}
-                data={item}
-                app_type={app_type}
-                updateWebSocketTask={updateWebSocketTask}
-                updateWebSocketTaskItem={updateWebSocketTaskItem}
-                LoginComProms={LoginComProms}
-              />
-            ))}
-          </Flex>
-        )}
+        <Flex gap="middle" wrap="wrap" justify="start" align="start">
+          {children}
+        </Flex>
       </Skeleton>
     </div>
   )

@@ -120,13 +120,14 @@ export const KeywordsCom = ({
 
 export interface UpdateLiveProps {
   type: 'add' | 'update'
+
   app_type: BaseWebsocketAdminProps['app_type']
   data?: UpdateLiveForm
   taskItem?: TaskListType
   updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
   className?: string
   children?: React.ReactNode
-  FormItems?: React.ReactNode[]
+  FormItems?: () => JSX.Element
 }
 
 export default function UpdateLive({
@@ -189,6 +190,7 @@ export default function UpdateLive({
       </div>
       <Modal
         title={type === 'add' ? '添加直播间' : '编辑直播间'}
+        // style={{ top: 5, maxHeight: 720 }}
         open={open}
         footer={null}
         onCancel={handleCancel}
@@ -214,7 +216,7 @@ export default function UpdateLive({
           >
             <Input placeholder="请输入自定义直播间名称" allowClear />
           </Form.Item>
-          {FormItems}
+          {FormItems ? <FormItems /> : null}
           <Form.Item<UpdateLiveForm>
             label="直播间描述（选填）"
             name="description"

@@ -19,7 +19,8 @@ export interface DouyinWebSocketTaskDb extends WebSocketTaskType {
 /**
  * 抖音 websocket 弹幕表
  */
-export interface DouyinWebSocketDanmaDb extends DanmuMessage {}
+export interface DouyinWebSocketDanmaDb
+  extends Omit<DanmuMessage, 'user_url'> {}
 
 /**
  * 抖音 websocket 用户表
@@ -38,11 +39,45 @@ export interface DouyinWebSocketUserDb {
    */
   readonly user_name: string
   /**
-   * 用户 主页
-   */
-  readonly user_url: string
-  /**
    * 进入时间
    */
   readonly timestamp: number
+}
+
+/**
+ * 抖音 websocket 礼物表
+ */
+export interface DouyinWebSocketGiftDb {
+  /**
+   * 用户ID
+   */
+  readonly user_id: string
+  /**
+   * 用户名称
+   */
+  readonly user_name: string
+  /**
+   * 礼物ID
+   */
+  readonly gift_id: number
+  /**
+   * 礼物名称
+   */
+  readonly gift_name: string
+  /**
+   * 礼物数量
+   */
+  readonly repeat_count: number
+  /**
+   * 礼物URL
+   */
+  readonly gift_url: string
+  /**
+   * 发送时间
+   */
+  readonly timestamp: number
+  /**
+   * 任务 ID
+   */
+  readonly task_id: string
 }

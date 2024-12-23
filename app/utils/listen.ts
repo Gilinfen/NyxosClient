@@ -16,3 +16,17 @@ export type TsListenType = <T>(
 export const tsListen: TsListenType = async (event, handler, options) => {
   return await listen(event, handler, options)
 }
+
+export type SoleTsListenType = <T>(
+  event: 'douyin:sole:getDataByField',
+  handler: EventCallback<T>,
+  options?: Options
+) => Promise<UnlistenFn>
+
+export const appSoleListen: SoleTsListenType = async (
+  event,
+  handler,
+  options
+) => {
+  return await listen(event, handler, options)
+}

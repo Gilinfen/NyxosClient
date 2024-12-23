@@ -29,14 +29,17 @@ import UpdateLive from './UpdateLive'
 import type {
   BaseWebsocketAdminProps,
   DanmuMessage,
+  TaskItemStatus,
   TaskListType
 } from './types'
+import { clsx } from 'clsx'
 
-export const Setting = () => {
+export const Setting = ({ disabled }: { disabled?: boolean }) => {
   return (
     <Tooltip title="编辑">
       <Button
         type="text"
+        disabled={disabled}
         className="scale-[1.5] mt-[.2rem] "
         icon={<SettingOutlined />}
       />
@@ -44,7 +47,7 @@ export const Setting = () => {
   )
 }
 
-const Reload = ({
+export const Reload = ({
   data,
   updateWebSocketTaskItem
 }: {
@@ -104,8 +107,6 @@ export const ChatItem = ({
   width?: string
   isAdmin?: boolean
 }) => {
-  // const user_url = `https://www.douyin.com/user/${messages_info?.user_id}?from_tab_name=live`
-
   return (
     <motion.div style={{ width }}>
       <Flex gap="small" className={cn('mb-[1rem] ', className)} wrap="wrap">
@@ -158,7 +159,7 @@ export const getActions = ({
         ...data
       }}
     >
-      <Setting />,
+      <Setting disabled={data.task_status === 'connecting'} />,
     </UpdateLive>,
     <Flex key="expand" justify="center" align="center">
       <Reload data={data} updateWebSocketTaskItem={updateWebSocketTaskItem} />
@@ -300,18 +301,80 @@ export const LiveLoading = ({
 
 export interface CardLiveMoomProps {
   readonly data: TaskListType
+  /** 组件 */
+  loading?: boolean
+  /** 登陆 loading */
+  loginLoading?: boolean
   readonly app_type: BaseWebsocketAdminProps['app_type']
-  readonly LoginComProms: BaseWebsocketAdminProps['LoginComProms']
+  /**
+   * 登陆组件参数
+   */
+  readonly LoginComProms: {
+    // /**
+    //  * 二维码连接
+    //  */
+    // readonly loginUrl?: string
+    // /**
+    //  * 登陆状态
+    //  * - loggedIn: 用户已成功登录
+    //  * - loggedOut: 用户未登录
+    //  * - scanned: 二维码已成功扫描
+    //  * - qrExpired: 二维码已过期
+    //  * - cancel: 取消
+    //  */
+    // readonly loginStatus:
+    //   | 'loggedIn'
+    //   | 'loggedOut'
+    //   | 'scanned'
+    //   | 'qrExpired'
+    //   | 'cancel'
+    /**
+     * 刷新函数
+     * @returns
+     */
+    readonly onExpired?: (data: TaskListType) => Promise<void>
+
+    /**
+     * 关闭
+     * @returns
+     */
+    readonly onClose?: (data: TaskListType) => void
+  }
+
   /**
    * message 自定义内容
    */
-  readonly MessageConent: BaseWebsocketAdminProps['MessageConent']
-  readonly MessageIconsArrCom: BaseWebsocketAdminProps['MessageIconsArrCom']
+  readonly MessageConent?: ReactNode
+
+  /**
+   * 右下角 控制器
+   * @param param0
+   * @returns
+   */
+  readonly MessageIconsArrCom?: ({
+    data
+  }: {
+    data: TaskListType
+  }) => ReactNode[]
+
   readonly AddFormItems?: BaseWebsocketAdminProps['AddFormItems']
-  readonly barrageCountProps: BaseWebsocketAdminProps['barrageCountProps']
-  readonly MemberEnterProps: BaseWebsocketAdminProps['MemberEnterProps']
+  /**
+   * 弹幕数量
+   */
+  readonly barrageCountProps: {
+    barrageCount: number
+  }
   readonly updateWebSocketTask?: BaseWebsocketAdminProps['updateWebSocketTask']
-  readonly updateWebSocketTaskItem?: BaseWebsocketAdminProps['updateWebSocketTaskItem']
+  /**
+   * 单个任务的执行状态函数
+   * @param data
+   * @param status 任务的执行状态，可以是 'start'、'stop'、'delete' 或 'reload'
+   * @returns
+   */
+  readonly updateWebSocketTaskItem?: (
+    data: TaskListType,
+    status: TaskItemStatus
+  ) => Promise<void>
 }
 
 export const CardTitle = ({ data }: { data: TaskListType }) => {
@@ -417,28 +480,35 @@ export const DanmuCount = ({
   data
 }: {
   data: TaskListType
-  barrageCountProps: BaseWebsocketAdminProps['barrageCountProps']
+  barrageCountProps: CardLiveMoomProps['barrageCountProps']
 }) => {
-  useEffect(() => {
-    barrageCountProps.useEffect?.(data)
-  }, [])
   return (
     <Flex gap="small" align="center" className="mt-[.2rem]" justify="start">
       <Tooltip title="已记录弹幕">
         <Space>
           <BoldOutlined />
-          {data.barrageCount} 弹幕
+          {barrageCountProps.barrageCount} 弹幕
         </Space>
       </Tooltip>
     </Flex>
   )
 }
 
-export const CardLiveMoomLoading = ({ children }: { children?: ReactNode }) => {
+export const CardLiveMoomLoading = ({
+  children,
+  isCole
+}: {
+  children?: ReactNode
+  isCole?: boolean
+}) => {
   return (
     <>
       <motion.div
-        className="absolute flex items-center justify-center top-0 left-0 right-0 bottom-0 backdrop-blur-sm bg-[rgba(0,0,0,0.3)] z-[12] rounded-lg border border-black"
+        className={clsx(
+          `absolute flex items-center justify-center top-0 left-0 right-0 bottom-0 backdrop-blur-sm bg-[rgba(0,0,0,0.3)] z-[12] ${
+            isCole ? 'rounded-lg border border-black' : 'rounded-none border-0'
+          }`
+        )}
         animate={{ opacity: [0, 1] }}
         transition={{ duration: 0.5 }}
       >
@@ -468,16 +538,12 @@ export const CardLiveMoomLoading = ({ children }: { children?: ReactNode }) => {
 }
 
 const MemberEnter = ({
-  messageEffect,
   data,
   className
-}: BaseWebsocketAdminProps['MemberEnterProps'] & {
+}: {
   data: TaskListType
   className: string
 }) => {
-  useEffect(() => {
-    messageEffect?.(data)
-  }, [])
   return (
     <Flex justify="start" align="center" className={className}>
       {data.messages_info && (
@@ -535,6 +601,7 @@ const LoginCom = ({
   const LoginStatusCom = () => {
     const [loading, setLoading] = useState<boolean>()
     const isLoading = useMemo(() => loading, [loading, data])
+
     switch (data.loginStatus) {
       case 'qrExpired':
         return (
@@ -604,20 +671,18 @@ const LoginCom = ({
 }
 
 export const MessagetypeRender = ({
-  data,
   MessageConent
 }: {
-  data: TaskListType
   MessageConent: CardLiveMoomProps['MessageConent']
 }) => {
   return (
     <Flex
       justify="center"
       align="center"
-      className="h-[20rem] mb-[3rem] pl-[1rem] overflow-hidden scroll-smooth"
+      className="h-[26.1rem] mb-[3rem] pl-[1rem] overflow-hidden scroll-smooth"
     >
       {MessageConent ? (
-        <MessageConent data={data} />
+        MessageConent
       ) : (
         <Empty description="暂不支持该消息类型" />
       )}
@@ -625,9 +690,15 @@ export const MessagetypeRender = ({
   )
 }
 
-const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
+const CardLiveMoom: React.FC<
+  CardLiveMoomProps & {
+    isCole?: boolean
+    className?: string
+  }
+> = ({
   data,
-  MemberEnterProps,
+  loading,
+  loginLoading,
   barrageCountProps,
   AddFormItems,
   MessageIconsArrCom,
@@ -635,43 +706,33 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
   app_type,
   updateWebSocketTask,
   updateWebSocketTaskItem,
-  LoginComProms
+  LoginComProms,
+  className,
+  isCole
 }) => {
-  const [loading, setloading] = useState(false)
-
   const onCardLiveMoomChatClick = async () => {
-    setloading(true)
     await LoginComProms?.onExpired?.(data)
   }
 
   const onClose = () => {
     LoginComProms.onClose?.(data)
-    setloading(false)
   }
 
-  useEffect(() => {
-    if (data.loginStatus === 'loggedIn') {
-      setloading(false)
-    }
-  }, [data.loginStatus])
-  console.log(data.task_status)
-
   return (
-    <Flex justify="center" align="center" className="relative">
-      {(data.task_status === 'reconnecting' || loading) && (
+    <Flex
+      justify="center"
+      align="center"
+      className={clsx('relative', className)}
+    >
+      {loading && <CardLiveMoomLoading />}
+      {loginLoading && (
         <CardLiveMoomLoading>
-          {loading ? (
-            data.loginUrl ? (
-              <LoginCom
-                data={data}
-                onClose={onClose}
-                onExpired={LoginComProms.onExpired}
-              />
-            ) : (
-              ''
-            )
-          ) : (
-            ''
+          {data.live_url && (
+            <LoginCom
+              data={data}
+              onClose={onClose}
+              onExpired={LoginComProms.onExpired}
+            />
           )}
         </CardLiveMoomLoading>
       )}
@@ -700,9 +761,8 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
         }
         cover={
           <div className="relative w-[100%]">
-            <MessagetypeRender MessageConent={MessageConent} data={data} />
+            <MessagetypeRender MessageConent={MessageConent} />
             <MemberEnter
-              {...MemberEnterProps}
               data={data}
               className="absolute w-full  bottom-[-5.1rem] left-0 right-0 px-[1rem]"
             />
@@ -733,8 +793,7 @@ const CardLiveMoom: React.FC<CardLiveMoomProps> = ({
           border: 'none',
           borderRadius: 0
         }}
-        // style={{ width: '15.3rem' }}
-        style={{ width: '18.55rem' }}
+        style={{ width: isCole ? '370px' : '20rem' }}
       >
         <Flex
           justify="space-between"

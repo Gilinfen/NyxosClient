@@ -1,14 +1,44 @@
-import { Empty, Flex, Skeleton } from 'antd'
-import { useEffect, useState } from 'react'
-import type { TaskListType } from '~/components/BaseWebsocketAdmin/types'
+import { Button, Empty, Flex, Skeleton } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import type {
+  BaseWebsocketAdminProps,
+  TaskListType
+} from '~/components/BaseWebsocketAdmin/types'
 import useAutoScrollToBottom from '~/hook/useAutoScrollToBottom'
 import { ChatItem } from '~/components/BaseWebsocketAdmin/CardLiveMoom'
 import { tsListen } from '~/utils/listen'
 import type { DouyinMessageType } from '~/db/douyin/message'
 import type { DouyinWebSocketDanmaDb } from '~/db/douyin'
-import { getAllData, getDataByField, insertData } from '~/db/utils'
+import { insertData } from '~/db/utils'
 import GiftMessageConent from './GiftMessageConent'
-import GiftVideo from './GiftVideo'
+import { PlayCircleOutlined } from '@ant-design/icons'
+import { useQueueStack } from '~/hook/useDelayStack.ts'
+
+export const pubdamutsListen = (
+  data: TaskListType,
+  callback?: (value: DouyinWebSocketDanmaDb) => void
+) => {
+  tsListen<DouyinMessageType['DouyinWebcastChatMessage']['payload']>(
+    'DouyinWebcastChatMessage',
+    async ({ payload }) => {
+      if (payload && payload.task_id === data.task_id) {
+        const messageval: DouyinWebSocketDanmaDb = {
+          ...payload,
+          timestamp: Date.now()
+        }
+
+        // await insertData<DouyinWebSocketDanmaDb>({
+        //   table: 'tasks_danmu',
+        //   data: messageval,
+        //   dbName: 'douyin' // 请替换为实际的数据库名称
+        // })
+
+        callback?.(messageval)
+      }
+    }
+  )
+}
+
 /**
  * 弹幕组件
  * @param param0
@@ -17,57 +47,31 @@ import GiftVideo from './GiftVideo'
 const MessageConent = ({
   data,
   isEmpty,
+  updateWebSocketTaskItem,
   position = 'y',
   className
 }: {
+  updateWebSocketTaskItem: BaseWebsocketAdminProps['updateWebSocketTaskItem']
   data: TaskListType
   className?: string
   position?: 'x' | 'y'
   isEmpty?: boolean
 }) => {
-  const [messages, setMessages] = useState<DouyinWebSocketDanmaDb[]>([])
   const containerRef = useAutoScrollToBottom<HTMLDivElement>(position)
-
-  const get_tasks_danmu = async () => {
-    const res = await getDataByField<DouyinWebSocketDanmaDb[]>(
-      'tasks_danmu',
-      'task_id',
-      data.task_id,
-      'douyin'
-    )
-    setMessages(res.slice(-100))
-  }
+  const [startloading, setstartloading] = useState(false)
+  const { list, addItems, maxSize, setMaxSize } =
+    useQueueStack<DouyinWebSocketDanmaDb>({
+      initialList: [],
+      getKey: task => task.message_id, // 告诉 Hook 如何获取唯一键
+      initialMaxSize: 10, // 初始最大长度为 5
+      queueEnabled: false,
+      skipDuplicates: false // 为 true 时跳过重复
+    })
 
   useEffect(() => {
-    get_tasks_danmu()
-    tsListen<DouyinMessageType['DouyinWebcastChatMessage']['payload']>(
-      'DouyinWebcastChatMessage',
-      async ({ payload }) => {
-        if (payload && payload.task_id === data.task_id) {
-          const messageval: DouyinWebSocketDanmaDb = {
-            ...payload,
-            user_url: `https://www.douyin.com/user/${payload.user_id}`,
-            timestamp: Date.now()
-          }
-
-          await insertData<DouyinWebSocketDanmaDb>({
-            table: 'tasks_danmu',
-            data: messageval,
-            dbName: 'douyin' // 请替换为实际的数据库名称
-          })
-
-          setMessages(state => {
-            const uniqueMessages = new Map(
-              state.map(msg => [msg.message_id, msg])
-            )
-            uniqueMessages.set(messageval.message_id, messageval)
-            return Array.from(uniqueMessages.values())
-              .sort((a, b) => a.timestamp - b.timestamp) // 根据timestamp排序
-              .slice(-100)
-          })
-        }
-      }
-    )
+    pubdamutsListen(data, messageval => {
+      addItems([messageval], 300)
+    })
   }, [data.task_id])
 
   const FlexProps =
@@ -81,36 +85,62 @@ const MessageConent = ({
           gap: 'small',
           justify: 'center',
           align: 'start',
-          className: 'w-full h-[20rem] relative overflow-y-auto  scroll-smooth'
+          className:
+            'w-full h-[26.1rem] relative overflow-y-auto  scroll-smooth'
         }
+
+  const EmptyMemo = useMemo(() => {
+    if (isEmpty || data.task_status === 'connecting') return () => null
+    return () => (
+      <Flex justify="center" align="center" className="w-full">
+        <Empty
+          image="https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg"
+          description={null}
+        >
+          <Button
+            className=" scale-[1.5]"
+            shape="circle"
+            loading={startloading}
+            onClick={async () => {
+              setstartloading(true)
+              await updateWebSocketTaskItem?.(data, 'start')
+              setstartloading(false)
+            }}
+            size="large"
+            type="primary"
+            icon={<PlayCircleOutlined />}
+          />
+        </Empty>
+      </Flex>
+    )
+  }, [data, startloading, updateWebSocketTaskItem, isEmpty])
+
+  const MessageListMemo = useMemo(() => {
+    if (data.task_status !== 'connecting') return () => null
+
+    return () => (
+      <>
+        {list.map(msg => (
+          <ChatItem
+            key={msg.message_id}
+            messages_info={{
+              ...msg,
+              user_url: `https://www.douyin.com/user/${msg.user_id}`
+            }}
+            className={className}
+          />
+        ))}
+      </>
+    )
+  }, [list, data, isEmpty])
 
   return (
     <>
-      <GiftVideo />
-      <GiftMessageConent data={data} />
+      {data.task_status === 'connecting' && <GiftMessageConent data={data} />}
       <Flex ref={containerRef} {...FlexProps}>
         <Skeleton active loading={false}>
-          {data.task_status === 'disconnected' && !isEmpty ? (
-            <Flex justify="center" align="center" className="w-full">
-              <Empty description="未连接" />
-            </Flex>
-          ) : (
-            <>
-              {messages.length > 0
-                ? messages.map(msg => (
-                    <ChatItem
-                      key={msg.message_id}
-                      messages_info={msg}
-                      className={className}
-                    />
-                  ))
-                : !isEmpty && (
-                    <Flex justify="center" align="center" className="w-full">
-                      <Empty description="暂无弹幕" />
-                    </Flex>
-                  )}
-            </>
-          )}
+          <MessageListMemo />
+          <EmptyMemo />
         </Skeleton>
       </Flex>
     </>

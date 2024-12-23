@@ -15,7 +15,7 @@ export default function Header() {
             <a href="/login">登录</a>
           </li>
           <li>
-            <a href="/dbapp">数据库应用</a>
+            <a href="/pages">pages</a>
           </li>
           <li>
             <a href="/douyin">抖音</a>

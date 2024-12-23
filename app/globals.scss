@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+    overflow: hidden;
+    /* 禁止页面滚动 */
+}
+
+
 :root {
     --medium-zoom-z-index: 1000;
     --medium-zoom-bg-color: #ffffff;

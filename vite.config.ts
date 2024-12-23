@@ -1,12 +1,12 @@
 import { defineConfig } from 'vite'
-import { reactRouter } from '@react-router/dev/vite'
+import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 const host = process.env.TAURI_DEV_HOST
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [reactRouter()],
+  plugins: [react()],
 
   // Vite选项为Tauri开发量身定制，仅在`tauri dev`或`tauri build`时应用
   clearScreen: false,

@@ -18,6 +18,7 @@ import {
 } from '~/components/BaseWebsocketAdmin/CardLiveMoom'
 import {
   AreaChartOutlined,
+  CommentOutlined,
   CopyOutlined,
   DeleteOutlined,
   DownloadOutlined,
@@ -25,7 +26,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import type { DouyinWebSocketDanmaDb } from '~/db/douyin/index'
-import { getAllData } from '~/db/utils'
+import { getDataByField } from '~/db/utils'
 import * as XLSX from 'xlsx'
 import { saveExcelFile } from '~/utils'
 
@@ -34,10 +35,20 @@ const QueryDanmuAll = async ({
 }: {
   data: TaskListType
 }): Promise<DouyinWebSocketDanmaDb[]> => {
-  return await getAllData<DouyinWebSocketDanmaDb[]>('tasks_danmu', 'douyin')
+  return await getDataByField<DouyinWebSocketDanmaDb[]>(
+    'tasks_danmu',
+    'task_id',
+    data.task_id,
+    'douyin'
+  )
 }
 
 export type DataListType = Awaited<ReturnType<typeof QueryDanmuAll>>
+
+const searchoprions = [
+  { label: '用户', value: 'user' },
+  { label: '弹幕', value: 'message' }
+]
 
 export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
   const [open, setOpen] = useState(false)
@@ -45,7 +56,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
   const [messageApi, contextHolder] = message.useMessage()
   const [loading, setLoading] = useState(false)
 
-  const [type, setType] = useState<'task' | 'user' | 'message'>('message')
+  const [type, setType] = useState<'user' | 'message'>('message')
 
   const onOpen = async () => {
     setLoading(true)
@@ -57,18 +68,6 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
   }
 
   const columns: ColumnType<DataListType[number]>[] = [
-    {
-      title: '直播间',
-      ellipsis: true,
-      dataIndex: 'task_id',
-      render: () => {
-        return (
-          <>
-            <CardTitle data={data} />
-          </>
-        )
-      }
-    },
     {
       title: '用户',
       dataIndex: 'user_name',
@@ -132,7 +131,7 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
   ]
 
   const onChangeType = (value: string) => {
-    setType(value as 'task' | 'user' | 'message')
+    setType(value as 'user' | 'message')
   }
 
   const onSearch = async (value: string) => {
@@ -143,9 +142,6 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
       return
     }
     const filtered = res?.filter(item => {
-      if (type === 'task') {
-        return item.task_id?.toLowerCase().includes(value.toLowerCase())
-      }
       if (type === 'user') {
         return item.user_name?.toLowerCase().includes(value.toLowerCase())
       }
@@ -205,12 +201,23 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
     <>
       {contextHolder}
       <Tooltip title="分析弹幕">
-        <AreaChartOutlined onClick={onOpen} />
+        <Button
+          type="text"
+          className="scale-[1.5] mt-[.2rem] "
+          onClick={onOpen}
+          icon={<CommentOutlined />}
+        />
       </Tooltip>
       <Modal
         open={open}
         width="80vw"
-        title={`${dataList?.length ?? 0}条弹幕分析`}
+        title={
+          <Space>
+            <CardTitle data={data} />
+            <span className="text-[red]">{dataList?.length ?? 0}</span>
+            {`条弹幕分析`}
+          </Space>
+        }
         onCancel={() => setOpen(false)}
       >
         <Flex
@@ -229,17 +236,19 @@ export const DanmuAreaChartComponent = ({ data }: { data: TaskListType }) => {
                 loading={loading}
               ></Button>
               <Select
-                options={[
-                  { label: '直播间', value: 'task' },
-                  { label: '用户', value: 'user' },
-                  { label: '弹幕', value: 'message' }
-                ]}
+                options={searchoprions}
                 onChange={onChangeType}
                 className="w-[8rem]"
                 defaultValue="message"
                 placeholder="选择类型"
               />
-              <Input placeholder="输入关键词" onChange={onChange} allowClear />
+              <Input
+                placeholder={`通过 ${
+                  searchoprions.find(e => e.value === type)?.label
+                } 关键词搜索`}
+                onChange={onChange}
+                allowClear
+              />
               <Button htmlType="submit" type="primary">
                 搜索
               </Button>

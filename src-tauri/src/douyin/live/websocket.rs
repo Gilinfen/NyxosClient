@@ -31,36 +31,42 @@ pub async fn connect_to_websocket(
     headers: HashMap<String, String>, // 将 headers 作为参数传入
 ) -> Result<(), String> {
     // 1. 把 url 转换为一个可修改的 request
-    let mut request = url
-        .into_client_request()
-        .map_err(|e| format!("Invalid WebSocket URL: {}", e))?;
+    let mut request = url.into_client_request().map_err(|e| {
+        let error_msg = format!("Invalid WebSocket URL: {}", e);
+        eprintln!("{}", error_msg); // 打印错误日志
+        error_msg
+    })?;
 
     // 2. 将自定义 headers 注入到 request 中
     {
         let req_headers = request.headers_mut();
         for (k, v) in &headers {
-            // 从字符串创建 HeaderName & HeaderValue
-            let header_name = HeaderName::from_bytes(k.as_bytes())
-                .map_err(|e| format!("Invalid header name {:?}: {}", k, e))?;
-            let header_value = HeaderValue::from_str(v)
-                .map_err(|e| format!("Invalid header value for {:?}: {}", k, e))?;
+            let header_name = HeaderName::from_bytes(k.as_bytes()).map_err(|e| {
+                let error_msg = format!("Invalid header name {:?}: {}", k, e);
+                eprintln!("{}", error_msg); // 打印错误日志
+                error_msg
+            })?;
+            let header_value = HeaderValue::from_str(v).map_err(|e| {
+                let error_msg = format!("Invalid header value for {:?}: {}", k, e);
+                eprintln!("{}", error_msg); // 打印错误日志
+                error_msg
+            })?;
 
             req_headers.insert(header_name, header_value);
         }
     }
 
     // 3. 使用 connect_async(request) 发起握手
-    let (ws_stream, _response) = connect_async(request)
-        .await
-        .map_err(|e| format!("Failed to connect : {}", e))?;
+    let (ws_stream, _response) = connect_async(request).await.map_err(|e| {
+        let error_msg = format!("Failed to connect: {}", e);
+        eprintln!("{}", error_msg); // 打印错误日志
+        error_msg
+    })?;
 
     // -------------------------
     // 以下是你原有的读/写协程及 mpsc 管理逻辑
     // -------------------------
-    // 为发送端和接收端设置 mpsc 管道，方便在其他地方发送消息
     let (tx, rx) = mpsc::unbounded_channel::<Message>();
-
-    // 把 ws_stream 拆分成 读/写
     let (write, mut read) = ws_stream.split();
 
     // **关键：克隆 tx 给读协程使用**
@@ -70,45 +76,61 @@ pub async fn connect_to_websocket(
     let app_handle_clone = app_handle.clone();
     let task_id_clone = task_id.clone();
     let read_handle = tokio::spawn(async move {
-        while let Some(Ok(msg)) = read.next().await {
-            // 如果是文本或二进制消息，可以处理一下
-            if let Message::Binary(bin) = msg {
-                let decoded_data = PushFrame::decode(&*bin).expect("PushFrame 解码错误");
-                let payload = decompress(&decoded_data.payload).expect("解压缩错误");
-                let res_pay = Response::decode(&*payload).expect("Response 解码错误");
-                if res_pay.need_ack {
-                    let ack = PushFrame {
-                        log_id: decoded_data.log_id,
-                        payload_type: "ack".to_string(),
-                        seq_id: 0,                // 示例：序列号，根据实际需要设置
-                        service: 1,               // 示例：服务标识，根据实际需要设置
-                        method: 2,                // 示例：方法标识，根据实际需要设置
-                        headers_list: Vec::new(), // 示例：如果有头部信息，根据实际需要填充
-                        payload_encoding: "gzip".to_string(), // 示例：有效载荷编码方式，如 "gzip"
-                        payload: Vec::new(),      // 示例：有效载荷数据，根据实际需要填充
-                    };
+        while let Some(result) = read.next().await {
+            match result {
+                Ok(msg) => {
+                    if let Message::Binary(bin) = msg {
+                        match PushFrame::decode(&*bin) {
+                            Ok(decoded_data) => {
+                                let payload =
+                                    decompress(&decoded_data.payload).unwrap_or_else(|e| {
+                                        eprintln!("Decompression error: {}", e);
+                                        vec![]
+                                    });
+                                match Response::decode(&*payload) {
+                                    Ok(res_pay) => {
+                                        if res_pay.need_ack {
+                                            let ack = PushFrame {
+                                                log_id: decoded_data.log_id,
+                                                payload_type: "ack".to_string(),
+                                                seq_id: 0,
+                                                service: 1,
+                                                method: 2,
+                                                headers_list: Vec::new(),
+                                                payload_encoding: "gzip".to_string(),
+                                                payload: Vec::new(),
+                                            };
 
-                    let mut buf = Vec::new();
-                    let _ = ack.encode(&mut buf);
+                                            let mut buf = Vec::new();
+                                            let _ = ack.encode(&mut buf);
 
-                    // 收到二进制数据就回发一个文本 ack
-                    if let Err(e) = tx_for_read.send(Message::Binary(buf)) {
-                        eprintln!("Failed to send ack: {}", e);
+                                            if let Err(e) = tx_for_read.send(Message::Binary(buf)) {
+                                                eprintln!("Failed to send ack: {}", e);
+                                            }
+
+                                            if let Err(e) = process::process_messages(
+                                                &app_handle_clone,
+                                                &res_pay.messages_list,
+                                                &task_id_clone,
+                                            )
+                                            .await
+                                            {
+                                                eprintln!("Error in process_messages: {}", e);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => eprintln!("Response decoding error: {}", e),
+                                }
+                            }
+                            Err(e) => eprintln!("PushFrame decoding error: {}", e),
+                        }
                     }
-
-                    process::process_messages(
-                        &app_handle_clone,
-                        &res_pay.messages_list,
-                        &task_id_clone,
-                    )
                 }
-                // 如果还需要针对 bin 做其他处理，可自行添加
+                Err(e) => eprintln!("WebSocket read error: {}", e),
             }
-            // 更多类型如 Message::Text(...) 等，根据需求自行处理
         }
     });
 
-    // 写消息协程：接受我们在后续命令中发到 tx 的消息
     let write_handle = tokio::spawn(async move {
         let mut write = write;
         let mut rx = rx;
@@ -120,7 +142,6 @@ pub async fn connect_to_websocket(
         }
     });
 
-    // 将两个协程的 handle 合并，方便后续 close 时管理
     let join_handle = tokio::spawn(async move {
         tokio::select! {
           _ = read_handle => (),
@@ -128,7 +149,6 @@ pub async fn connect_to_websocket(
         }
     });
 
-    // 注册到 Manager 中
     {
         let mut mgr = manager.lock().await;
         mgr.insert(
@@ -139,6 +159,7 @@ pub async fn connect_to_websocket(
             },
         );
     }
+
     Ok(())
 }
 
